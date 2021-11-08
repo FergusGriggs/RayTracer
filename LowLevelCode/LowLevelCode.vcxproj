@@ -139,11 +139,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DefaultHeap.cpp" />
     <ClCompile Include="GlobalAllocation.cpp" />
+    <ClCompile Include="ManagedHeap.cpp" />
+    <ClCompile Include="HeapManager.cpp" />
     <ClCompile Include="LowLevelCode.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DefaultHeap.h" />
     <ClInclude Include="GlobalAllocation.h" />
+    <ClInclude Include="HeaderFooter.h" />
+    <ClInclude Include="ManagedHeap.h" />
+    <ClInclude Include="HeapManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

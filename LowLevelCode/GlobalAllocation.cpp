@@ -2,20 +2,11 @@
 
 #include <iostream>
 
+#include "HeaderFooter.h"
+
 #define CHECK_CODE 0xBAADCA75
 
 typedef char byte;
-
-struct Header
-{
-	unsigned int m_checkCode;
-	size_t       m_size;
-};
-
-struct Footer
-{
-	unsigned int m_checkCode;
-};
 
 void* operator new(size_t size)
 {

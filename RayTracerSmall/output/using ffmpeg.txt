@@ -1,0 +1,4 @@
+assuming your output ppm files are called sphere1.ppm etc... from a console
+
+ffmpeg -framerate 25 -i spheres%d.ppm -vcodec mpeg4 output.mp4
+

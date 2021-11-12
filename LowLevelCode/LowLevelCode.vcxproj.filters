@@ -24,10 +24,22 @@
     <ClCompile Include="HeapManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ManagedHeap.cpp">
+    <ClCompile Include="heap_types\ManagedHeap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DefaultHeap.cpp">
+    <ClCompile Include="heap_types\DefaultHeap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="heap_types\GraphicsHeap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="heap_types\AudioHeap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test\GraphicsObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="heap_types\PhysicsHeap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,13 +50,25 @@
     <ClInclude Include="HeapManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ManagedHeap.h">
+    <ClInclude Include="heap_types\ManagedHeap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HeaderFooter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DefaultHeap.h">
+    <ClInclude Include="heap_types\DefaultHeap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="heap_types\GraphicsHeap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="heap_types\AudioHeap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test\GraphicsObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="heap_types\PhysicsHeap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

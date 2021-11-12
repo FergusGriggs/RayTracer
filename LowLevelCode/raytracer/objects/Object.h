@@ -18,8 +18,8 @@ public:
     const Vec3f&    getPosition() const;
     const Material& getMaterial() const;
 
-    void* operator new(size_t size);
-    void* operator new[](size_t size);
+    static void* operator new(size_t size);
+    static void* operator new[](size_t size);
 
 protected:
     KeyFramedValue<Vec3f> m_positions;

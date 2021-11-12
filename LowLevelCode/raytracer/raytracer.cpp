@@ -206,7 +206,8 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 						}
 					}
 
-					m_objects.push_back(new Sphere(positions, m_materials[materialId], radii));
+					Sphere* sphere = new Sphere(positions, m_materials[materialId], radii);
+					m_objects.push_back(sphere);
 				}
 			}
 		}
@@ -259,10 +260,10 @@ Vec3f Raytracer::trace(const Vec3f &rayOrigin, const Vec3f &rayDir, int depth) c
 			}
 		}
 	}
-	// if there's no intersection return black or background color
+	// if there's no intersection return white
 	if (object == nullptr)
 	{
-		return Vec3f(0.0f);
+		return Vec3f(1.0f);
 	}
 
 	const Material& objectMaterial = object->getMaterial();
@@ -364,16 +365,11 @@ void Raytracer::run()
 //[/comment]
 void Raytracer::renderFrame()
 {
-	// Recommended Testing Resolution
-	//unsigned width = 640, height = 480;
-
-	// Recommended Production Resolution
-	//unsigned width = 1920, height = 1080;
 	Vec3f* image = new Vec3f[m_width * m_height];
 	Vec3f* pixel = image;
 
 	float invWidth = 1 / float(m_width), invHeight = 1 / float(m_height);
-	float fov = 30, aspectratio = m_width / float(m_height);
+	float fov = 30.0f, aspectratio = m_width / float(m_height);
 	float angle = tan(M_PI * 0.5 * fov / 180.);
 
 	// Trace rays
@@ -391,6 +387,7 @@ void Raytracer::renderFrame()
 	// Save result to a PPM image (keep these flags if you compile under Windows)
 	std::stringstream ss;
 	ss << "raytracer/output/spheres" << m_currentFrame << ".ppm";
+
 	std::string tempString = ss.str();
 	char* filename = (char*)tempString.c_str();
 

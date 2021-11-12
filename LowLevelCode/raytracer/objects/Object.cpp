@@ -1,6 +1,7 @@
 #include "Object.h"
 
 #include "../../../LowLevelCode/HeapManager.h"
+#include "../GlobalAllocation.h"
 
 Object::Object(const KeyFramedValue<Vec3f>& positions, const Material& material) :
     m_positions(positions),

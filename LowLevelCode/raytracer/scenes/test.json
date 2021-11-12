@@ -4,7 +4,14 @@
 			"id": "default",
 			"baseColour": [1.0, 0.0, 0.0],
 			"emissiveColour": [0.0, 0.0, 0.0],
-			"transparency": 0.0,
+			"transparency": 1.0,
+			"reflectivity": 0.0
+		},
+		{
+			"id": "floor",
+			"baseColour": [0.0, 1.0, 0.0],
+			"emissiveColour": [0.0, 0.0, 0.0],
+			"transparency": 1.0,
 			"reflectivity": 1.0
 		}
 	],
@@ -33,6 +40,24 @@
 			{
 				"value": 3.0,
 				"time": 100.0
+			}
+			]
+		},
+		{
+			"type": "Sphere",
+			"materialId": "floor",
+			
+			"position_keyframes": [
+			{
+				"value": [0.0, -10004.0, 0.0],
+				"time": 0.0
+			}
+			],
+			
+			"radius_keyframes": [
+			{
+				"value": 10000.0,
+				"time": 0.0
 			}
 			]
 		}

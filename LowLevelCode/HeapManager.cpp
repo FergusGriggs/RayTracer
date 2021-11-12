@@ -18,7 +18,6 @@ HeapManager::~HeapManager()
 {
     for (auto& heap : m_heaps)
     {
-        std::cout << "Default heap bytes allocated at end of program " << HeapManager::getHeapPtr(ManagedHeap::Type::eDefault)->getBytesAllocated() << "\n";
         delete heap.second;
     }
 

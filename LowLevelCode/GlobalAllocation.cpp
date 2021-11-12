@@ -87,12 +87,12 @@ void deallocateManaged(void* memoryAddress)
 
 void* operator new(size_t size)
 {
-	return allocateManaged(size, &s_defaultHeap);//HeapManager::it().getDefaultHeapPtr()
+	return allocateManaged(size, &s_defaultHeap);
 }
 
 void* operator new[](size_t size)
 {
-	return allocateManaged(size, &s_defaultHeap);//HeapManager::it().getDefaultHeapPtr()
+	return allocateManaged(size, &s_defaultHeap);
 }
 
 void* operator new(size_t size, ManagedHeap* heap)

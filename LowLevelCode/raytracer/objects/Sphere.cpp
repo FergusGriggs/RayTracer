@@ -2,17 +2,25 @@
 
 #include <cmath>
 
-Sphere::Sphere(const Vec3f& position, const Material& material, float radius) :
-	Object(position, material),
+Sphere::Sphere(const KeyFramedValue<Vec3f>& positions, const Material& material, const KeyFramedValue<float>& radii) :
+	Object(positions, material),
 
-	m_radius(radius),
-	m_radiusSquared(radius* radius)
+	m_radii(radii),
+	m_radiusSquared(0.0f)
 {
+}
+
+void Sphere::update(float currentTime)
+{
+	Object::update(currentTime);
+
+	m_radii.updateCurrentValue(currentTime);
+	m_radiusSquared = m_radii.getCurrentValue() * m_radii.getCurrentValue();
 }
 
 bool Sphere::intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, float& t1) const
 {
-	Vec3f l = m_position - rayOrigin;
+	Vec3f l = getPosition() - rayOrigin;
 	float tca = l.dot(rayDir);
 	if (tca < 0.0f)
 	{
@@ -35,7 +43,7 @@ bool Sphere::intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, f
 
 float Sphere::getRadius() const
 {
-	return m_radius;
+	return m_radii.getCurrentValue();
 }
 
 float Sphere::getRadiusSquared() const

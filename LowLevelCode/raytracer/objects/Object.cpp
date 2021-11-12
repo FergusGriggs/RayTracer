@@ -2,8 +2,8 @@
 
 #include "../../../LowLevelCode/HeapManager.h"
 
-Object::Object(const Vec3f& position, const Material& material) :
-    m_position(position),
+Object::Object(const KeyFramedValue<Vec3f>& positions, const Material& material) :
+    m_positions(positions),
 
     m_material(material)
 {
@@ -13,6 +13,11 @@ Object::~Object()
 {
 }
 
+void Object::update(float currentTime)
+{
+    m_positions.updateCurrentValue(currentTime);
+}
+
 bool Object::intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, float& t1) const
 {
     return false;
@@ -20,7 +25,7 @@ bool Object::intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, f
 
 const Vec3f& Object::getPosition() const
 {
-    return m_position;
+    return m_positions.getCurrentValue();
 }
 
 const Material& Object::getMaterial() const

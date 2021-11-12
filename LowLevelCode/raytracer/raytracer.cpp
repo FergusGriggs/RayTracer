@@ -33,14 +33,11 @@
 #include <sstream>
 #include <string.h>
 
-#include "GlobalAllocation.h"
-#include "HeapManager.h"
-
-#include "src/objects/Sphere.h"
+#include "objects/Sphere.h"
 
 #if defined __linux__ || defined __APPLE__
 // "Compiled for Linux
-#else
+#elseWW
 // Windows doesn't define these values by default, Linux does
 #define M_PI 3.141592653589793
 #define INFINITY 1e8
@@ -55,6 +52,14 @@ float mix(float a, float b, float mix)
 {
 	return b * mix + a * (1 - mix);
 }
+
+class Raytracer
+{
+public:
+	Raytracer();
+	~Raytracer();
+
+};
 
 //[comment]
 // This is the main trace function. It takes a ray as argument (defined by its origin

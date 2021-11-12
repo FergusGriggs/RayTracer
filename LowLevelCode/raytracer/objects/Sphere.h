@@ -7,7 +7,9 @@
 class Sphere : public Object
 {
 public:
-	Sphere(const Vec3f& position, const Material& material, float radius);
+	Sphere(const KeyFramedValue<Vec3f>& positions, const Material& material, const KeyFramedValue<float>& radii);
+
+	virtual void update(float currentTime) override;
 
 	// Compute a ray-sphere intersection using the geometric solution
 	virtual bool intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, float& t1) const override;
@@ -16,6 +18,6 @@ public:
 	float getRadiusSquared() const;
 
 private:
-	float m_radius;
-	float m_radiusSquared;
+	KeyFramedValue<float> m_radii;
+	float                 m_radiusSquared;
 };

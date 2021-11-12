@@ -5,6 +5,7 @@
 class Material
 {
 public:
+    Material();
     Material(const Vec3f& baseColour, float transparency = 0.0f, float reflectivity = 0.0f, const Vec3f& emissiveColour = 0.0f);
     ~Material();
 

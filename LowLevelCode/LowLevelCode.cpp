@@ -7,6 +7,8 @@
 
 #include "HeapManager.h"
 
+#include "raytracer/Raytracer.h"
+
 class MyObject
 {
 public:
@@ -42,13 +44,13 @@ int main()
     //MyObject* newObj = new MyObject();
 
     //delete newObj;
-    GraphicsObject* obj1 = new GraphicsObject();
+   /* GraphicsObject* obj1 = new GraphicsObject();
     GraphicsObject* obj2 = new GraphicsObject();
     GraphicsObject* obj3 = new GraphicsObject();
 
     delete obj1;
     delete obj2;
-    delete obj3;
+    delete obj3;*/
     //int number = 7;
 
     //int* numberArray = new int[10];
@@ -58,4 +60,8 @@ int main()
 
     //free(mallocNumberArray);
     //delete[] numberArray;
+
+    Raytracer* raytracer = new Raytracer();
+
+    delete raytracer;
 }

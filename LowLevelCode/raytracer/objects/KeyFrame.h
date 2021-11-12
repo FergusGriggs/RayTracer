@@ -20,12 +20,12 @@ public:
 	{
 	}
 
-	const T& getValue()
+	const T& getValue() const
 	{
 		return m_value;
 	}
 
-	float getTime()
+	float getTime() const
 	{
 		return m_time;
 	}

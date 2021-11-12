@@ -5,12 +5,12 @@
 #include "KeyFrame.h"
 #include "../Vec3.h"
 
-float keyFrameLerp(float a, float b, float delta)
+static float keyFrameLerp(float a, float b, float delta)
 {
 	return a + (b - a) * delta;
 }
 
-Vec3f keyFrameLerp(const Vec3f& a, const Vec3f& b, float delta)
+static Vec3f keyFrameLerp(const Vec3f& a, const Vec3f& b, float delta)
 {
 	return a + (b - a) * delta;
 }

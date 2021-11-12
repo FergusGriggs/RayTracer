@@ -142,7 +142,6 @@
   <ItemGroup>
     <ClCompile Include="heap_types\PhysicsHeap.cpp" />
     <ClCompile Include="raytracer\objects\KeyFrame.cpp" />
-    <ClCompile Include="raytracer\objects\KeyFramedValue.cpp" />
     <ClCompile Include="raytracer\objects\ObjectLoader.cpp" />
     <ClCompile Include="raytracer\Raytracer.cpp" />
     <ClCompile Include="raytracer\Material.cpp" />
@@ -159,6 +158,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="heap_types\PhysicsHeap.h" />
+    <ClInclude Include="raytracer\Raytracer.h" />
     <ClInclude Include="raytracer\objects\KeyFrame.h" />
     <ClInclude Include="raytracer\objects\KeyFramedValue.h" />
     <ClInclude Include="raytracer\objects\ObjectLoader.h" />

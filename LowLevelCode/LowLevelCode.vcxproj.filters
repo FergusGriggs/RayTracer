@@ -113,5 +113,8 @@
     <ClInclude Include="raytracer\Raytracer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="raytracer\MathDefines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -158,6 +158,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="heap_types\PhysicsHeap.h" />
+    <ClInclude Include="raytracer\MathDefines.h" />
     <ClInclude Include="raytracer\Raytracer.h" />
     <ClInclude Include="raytracer\objects\KeyFrame.h" />
     <ClInclude Include="raytracer\objects\KeyFramedValue.h" />

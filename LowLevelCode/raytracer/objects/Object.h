@@ -22,6 +22,7 @@ public:
     static void* operator new[](size_t size);
 
 protected:
+    KeyFramedValue<bool>  m_active;
     KeyFramedValue<Vec3f> m_positions;
 
     const Material& m_material;

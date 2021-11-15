@@ -37,14 +37,7 @@
 
 #include "objects/Sphere.h"
 #include "Raytracer.h"
-
-#if defined __linux__ || defined __APPLE__
-// "Compiled for Linux
-#else
-// Windows doesn't define these values by default, Linux does
-#define M_PI 3.141592653589793
-#define INFINITY 1e8
-#endif
+#include "MathDefines.h"
 
 //[comment]
 // This variable controls the maximum recursion depth
@@ -133,7 +126,6 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 		return;
 	}
 
-
 	if (document.HasMember("Scene"))
 	{
 		rapidjson::Value& sceneObject = document["Scene"];
@@ -171,8 +163,25 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 					std::string type = (*objectItr)["type"].GetString();
 					std::string materialId = (*objectItr)["materialId"].GetString();
 
+					KeyFramedValue<bool>  actives;
 					KeyFramedValue<Vec3f> positions;
 					KeyFramedValue<float> radii;
+
+					if (objectItr->HasMember("active_keyframes"))
+					{
+						rapidjson::Value& activeKeyframes = (*objectItr)["position_keyframes"];
+
+						if (activeKeyframes.IsArray())
+						{
+							for (auto activeKeyframeItr = activeKeyframes.Begin(); activeKeyframeItr != activeKeyframes.End(); ++activeKeyframeItr)
+							{
+								bool active = (*activeKeyframeItr)["value"].GetBool();
+								float time = (*activeKeyframeItr)["time"].GetFloat();
+
+								actives.addKeyFrame(KeyFrame<bool>(active, time));
+							}
+						}
+					}
 
 					if (objectItr->HasMember("position_keyframes"))
 					{

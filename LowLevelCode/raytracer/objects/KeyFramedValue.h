@@ -5,6 +5,11 @@
 #include "KeyFrame.h"
 #include "../Vec3.h"
 
+static bool keyFrameLerp(bool a, bool b, float delta)
+{
+	return a;
+}
+
 static float keyFrameLerp(float a, float b, float delta)
 {
 	return a + (b - a) * delta;

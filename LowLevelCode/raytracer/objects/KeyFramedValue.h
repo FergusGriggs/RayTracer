@@ -4,6 +4,7 @@
 
 #include "KeyFrame.h"
 #include "../Vec3.h"
+#include "../easings.h"
 
 static bool keyFrameLerp(bool a, bool b, float delta)
 {
@@ -37,11 +38,11 @@ public:
 		m_keyframes.push_back(keyFrame);
 	}
 
-	void processKeyFrames()
+	void processKeyFrames(const T& defaultValue)
 	{
 		if (m_keyframes.empty())
 		{
-			m_keyframes.push_back(KeyFrame<T>());
+			m_keyframes.push_back(KeyFrame<T>(defaultValue, 0.0f));
 		}
 		else if (m_keyframes[0].getTime() != 0.0f) // Duplicate first
 		{
@@ -73,12 +74,36 @@ public:
 		int numKeyFrames = static_cast<int>(m_keyframes.size());
 		for (int keyFrameIndex = 0; keyFrameIndex < numKeyFrames - 1; ++keyFrameIndex)
 		{
-			float frame1Time = m_keyframes[keyFrameIndex].getTime();
-			float frame2Time = m_keyframes[keyFrameIndex + 1].getTime();
+			float frameATime = m_keyframes[keyFrameIndex].getTime();
+			float frameBTime = m_keyframes[keyFrameIndex + 1].getTime();
 
-			if (time >= frame1Time && time < frame2Time)
+			if (time >= frameATime && time < frameBTime)
 			{
-				float delta = (time - frame1Time) / (frame2Time - frame1Time);
+				float delta = (time - frameATime) / (frameBTime - frameATime);
+
+				EaseType frameAEaseOut = m_keyframes[keyFrameIndex].getEaseOut();
+				EaseType frameBEaseIn = m_keyframes[keyFrameIndex + 1].getEaseIn();
+
+				if (frameAEaseOut != EaseType::eUnset && frameBEaseIn == EaseType::eUnset)
+				{
+					delta = getValueEasedOut(delta, frameAEaseOut);
+				}
+				else if (frameBEaseIn != EaseType::eUnset && frameAEaseOut == EaseType::eUnset)
+				{
+					delta = getValueEasedIn(delta, frameBEaseIn);
+				}
+				else if (frameAEaseOut != EaseType::eUnset && frameBEaseIn != EaseType::eUnset)
+				{
+					if (delta < 0.5f)
+					{
+						delta = 0.5f * getValueEasedOut(delta * 2.0f, frameAEaseOut);
+					}
+					else
+					{
+						delta = 0.5f + 0.5f * getValueEasedIn((delta - 0.5f) * 2.0f, frameBEaseIn);
+					}
+				}
+
 				return keyFrameLerp(m_keyframes[keyFrameIndex].getValue(), m_keyframes[keyFrameIndex + 1].getValue(), delta);
 			}
 		}
@@ -87,6 +112,8 @@ public:
 		{
 			return m_keyframes[numKeyFrames - 1].getValue();
 		}
+
+		return T(0.0f);
 	}
 
 private:

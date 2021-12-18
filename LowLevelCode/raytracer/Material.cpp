@@ -32,12 +32,17 @@ const Vec3f& Material::getEmissiveColour() const
 	return m_emissiveColour;
 }
 
-float Material::getTransparency() const
+float Material::getTransmission() const
 {
-	return m_transparency;
+	return m_transmission;
 }
 
-float Material::getReflectivity() const
+float Material::getRoughness() const
 {
-	return m_reflectivity;
+	return m_roughness;
+}
+
+float Material::getMetallic() const
+{
+	return m_metallic;
 }

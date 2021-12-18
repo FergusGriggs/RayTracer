@@ -12,14 +12,16 @@ public:
     const Vec3f& getBaseColour() const;
     const Vec3f& getEmissiveColour() const;
 
-    float getTransparency() const;
-    float getReflectivity() const;
+    float getTransmission() const;
+    float getRoughness() const;
+    float getMetallic() const;
 
 private:
     Vec3f m_baseColour;
     Vec3f m_emissiveColour;
 
-    float m_transparency;
-    float m_reflectivity;
+    float m_transmission;
+    float m_roughness;
+    float m_metallic;
 };
 

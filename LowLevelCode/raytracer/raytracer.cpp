@@ -38,6 +38,7 @@
 #include "objects/Sphere.h"
 #include "Raytracer.h"
 #include "MathDefines.h"
+#include "easings.h"
 
 //[comment]
 // This variable controls the maximum recursion depth
@@ -76,6 +77,65 @@ static Vec3f getFloat3FromArray(rapidjson::Value::Array arrayObject)
 	}
 
 	return returnValue;
+}
+
+static void loadJsonValue(rapidjson::Value& jsonObject, const char* valueName, bool& value)
+{
+	value = jsonObject[valueName].GetBool();
+}
+
+static void loadJsonValue(rapidjson::Value& jsonObject, const char* valueName, float& value)
+{
+	value = jsonObject[valueName].GetFloat();
+}
+
+static void loadJsonValue(rapidjson::Value& jsonObject, const char* valueName, Vec3f& value)
+{
+	value = getFloat3FromArray(jsonObject[valueName].GetArray());
+}
+
+template<class T>
+static void loadValueKeyFrames(KeyFramedValue<T>& valueKeyFrames, rapidjson::Value& jsonObject, const char* keyFrameNames, const T& defaultValue)
+{
+	if (jsonObject.HasMember(keyFrameNames))
+	{
+		rapidjson::Value& keyFramesArray = jsonObject[keyFrameNames];
+
+		if (keyFramesArray.IsArray())
+		{
+			for (auto keyFramesArrayItr = keyFramesArray.Begin(); keyFramesArrayItr != keyFramesArray.End(); ++keyFramesArrayItr)
+			{
+				T value;
+				loadJsonValue((*keyFramesArrayItr), "value", value);
+
+				float time = (*keyFramesArrayItr)["time"].GetFloat();
+
+				EaseType easeIn = EaseType::eUnset;
+				EaseType easeOut = EaseType::eUnset;
+
+				if ((*keyFramesArrayItr).HasMember("ease_in"))
+				{
+					auto easeStringsItr = sc_easeTypeStrings.find((*keyFramesArrayItr)["ease_in"].GetString());
+					if (easeStringsItr != sc_easeTypeStrings.end())
+					{
+						easeIn = easeStringsItr->second;
+					}
+				}
+
+				if ((*keyFramesArrayItr).HasMember("ease_out"))
+				{
+					auto easeStringsItr = sc_easeTypeStrings.find((*keyFramesArrayItr)["ease_out"].GetString());
+					if (easeStringsItr != sc_easeTypeStrings.end())
+					{
+						easeOut = easeStringsItr->second;
+					}
+				}
+
+				valueKeyFrames.addKeyFrame(KeyFrame<T>(value, time, easeIn, easeOut));
+			}
+		}
+	}
+	valueKeyFrames.processKeyFrames(defaultValue);
 }
 
 Raytracer::Raytracer()
@@ -130,6 +190,21 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 	{
 		rapidjson::Value& sceneObject = document["Scene"];
 
+
+		if (sceneObject.HasMember("MetaData"))
+		{
+			rapidjson::Value& sceneMetaData = sceneObject["MetaData"];
+
+			if (sceneMetaData.HasMember("frame_rate"))
+			{
+				m_frameRate = sceneMetaData["frame_rate"].GetInt();
+			}
+			if (sceneMetaData.HasMember("frame_count"))
+			{
+				m_frameCount = sceneMetaData["frame_count"].GetInt();
+			}
+		}
+
 		if (sceneObject.HasMember("Materials"))
 		{
 			rapidjson::Value& materialListObj = sceneObject["Materials"];
@@ -163,59 +238,16 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 					std::string type = (*objectItr)["type"].GetString();
 					std::string materialId = (*objectItr)["materialId"].GetString();
 
-					KeyFramedValue<bool>  actives;
-					KeyFramedValue<Vec3f> positions;
-					KeyFramedValue<float> radii;
+					KeyFramedValue<bool>  activeKeyFrames;
+					loadValueKeyFrames(activeKeyFrames, (*objectItr), "active_keyframes", true);
 
-					if (objectItr->HasMember("active_keyframes"))
-					{
-						rapidjson::Value& activeKeyframes = (*objectItr)["position_keyframes"];
+					KeyFramedValue<Vec3f>  positionKeyFrames;
+					loadValueKeyFrames(positionKeyFrames, (*objectItr), "position_keyframes", Vec3f(0.0f, 0.0f, 0.0f));
 
-						if (activeKeyframes.IsArray())
-						{
-							for (auto activeKeyframeItr = activeKeyframes.Begin(); activeKeyframeItr != activeKeyframes.End(); ++activeKeyframeItr)
-							{
-								bool active = (*activeKeyframeItr)["value"].GetBool();
-								float time = (*activeKeyframeItr)["time"].GetFloat();
+					KeyFramedValue<float>  radiusKeyFrames;
+					loadValueKeyFrames(radiusKeyFrames, (*objectItr), "radius_keyframes", 1.0f);
 
-								actives.addKeyFrame(KeyFrame<bool>(active, time));
-							}
-						}
-					}
-
-					if (objectItr->HasMember("position_keyframes"))
-					{
-						rapidjson::Value& positionKeyframes = (*objectItr)["position_keyframes"];
-
-						if (positionKeyframes.IsArray())
-						{
-							for (auto positionKeyframeItr = positionKeyframes.Begin(); positionKeyframeItr != positionKeyframes.End(); ++positionKeyframeItr)
-							{
-								Vec3f position = getFloat3FromArray((*positionKeyframeItr)["value"].GetArray());
-								float time = (*positionKeyframeItr)["time"].GetFloat();
-
-								positions.addKeyFrame(KeyFrame<Vec3f>(position, time));
-							}
-						}
-					}
-
-					if (objectItr->HasMember("radius_keyframes"))
-					{
-						rapidjson::Value& radiusKeyframes = (*objectItr)["radius_keyframes"];
-
-						if (radiusKeyframes.IsArray())
-						{
-							for (auto radiusKeyframeItr = radiusKeyframes.Begin(); radiusKeyframeItr != radiusKeyframes.End(); ++radiusKeyframeItr)
-							{
-								float radius = (*radiusKeyframeItr)["value"].GetFloat();
-								float time = (*radiusKeyframeItr)["time"].GetFloat();
-
-								radii.addKeyFrame(KeyFrame<float>(radius, time));
-							}
-						}
-					}
-
-					Sphere* sphere = new Sphere(positions, m_materials[materialId], radii);
+					Sphere* sphere = new Sphere(activeKeyFrames, positionKeyFrames, m_materials[materialId], radiusKeyFrames);
 					m_objects.push_back(sphere);
 				}
 			}
@@ -259,13 +291,16 @@ Vec3f Raytracer::trace(const Vec3f &rayOrigin, const Vec3f &rayDir, int depth) c
 	for (unsigned i = 0; i < m_objects.size(); ++i)
 	{
 		float t0 = INFINITY, t1 = INFINITY;
-		if (m_objects[i]->intersect(rayOrigin, rayDir, t0, t1))
+		if (m_objects[i]->isActive())
 		{
-			if (t0 < 0) t0 = t1;
-			if (t0 < tnear)
+			if (m_objects[i]->intersect(rayOrigin, rayDir, t0, t1))
 			{
-				tnear = t0;
-				object = m_objects[i];
+				if (t0 < 0) t0 = t1;
+				if (t0 < tnear)
+				{
+					tnear = t0;
+					object = m_objects[i];
+				}
 			}
 		}
 	}
@@ -285,7 +320,7 @@ Vec3f Raytracer::trace(const Vec3f &rayOrigin, const Vec3f &rayDir, int depth) c
 					  // reverse the normal direction. That also means we are inside the sphere so set
 					  // the inside bool to true. Finally reverse the sign of IdotN which we want
 					  // positive.
-	float bias = 1e-4; // add some bias to the point from which we will be tracing
+	float bias = 1e-3; // add some bias to the point from which we will be tracing
 	bool inside = false;
 
 	if (rayDir.dot(nhit) > 0.0f)
@@ -294,57 +329,63 @@ Vec3f Raytracer::trace(const Vec3f &rayOrigin, const Vec3f &rayDir, int depth) c
 		inside = true;
 	}
 
-	if ((objectMaterial.getTransparency() > 0.0f || objectMaterial.getReflectivity() > 0.0f) && depth < MAX_RAY_DEPTH)
+	if (objectMaterial.getTransparency() > 0.0f || objectMaterial.getReflectivity() > 0.0f && depth < MAX_RAY_DEPTH)
 	{
-		float facingratio = -rayDir.dot(nhit);
+		float facingRatio = -rayDir.dot(nhit);
 		// change the mix value to tweak the effect
-		float fresneleffect = mix(pow(1.0f - facingratio, 3.0f), 1.0f, 0.1f);
+		float fresnel = pow(fminf(1.0f, fmaxf(0.0f, 1.0f - facingRatio)), 5.0f);
 		// compute reflection direction (not need to normalize because all vectors
 		// are already normalized)
-		Vec3f reflDir = rayDir - nhit * 2 * rayDir.dot(nhit);
+		Vec3f reflDir = rayDir - nhit * 2.0f * rayDir.dot(nhit);
 		reflDir.normalize();
-		Vec3f reflection = trace(phit + nhit * bias, reflDir, depth + 1);
-		Vec3f refraction = 0;
+		Vec3f reflection = trace(phit + nhit * bias, reflDir, depth + 1.0f);
+		
+		Vec3f refraction = objectMaterial.getBaseColour();
 		// if the sphere is also transparent compute refraction ray (transmission)
-
 		if (objectMaterial.getTransparency())
 		{
-			float ior = 1.1, eta = (inside) ? ior : 1 / ior; // are we inside or outside the surface?
+			float ior = 1.1f, eta = (inside) ? ior : 1.0f / ior; // are we inside or outside the surface?
 			float cosi = -nhit.dot(rayDir);
-			float k = 1 - eta * eta * (1 - cosi * cosi);
+			float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
 			Vec3f refrDir = rayDir * eta + nhit * (eta *  cosi - sqrt(k));
 			refrDir.normalize();
-			refraction = trace(phit - nhit * bias, refrDir, depth + 1);
+			refraction = trace(phit - nhit * bias, refrDir, depth + 1.0f);
 		}
 		// the result is a mix of reflection and refraction (if the sphere is transparent)
-		surfaceColor = (reflection * fresneleffect + refraction * (1 - fresneleffect) * objectMaterial.getTransparency()) * objectMaterial.getBaseColour();
+		surfaceColor = (reflection * fresnel + refraction * (1.0f - fresnel) * objectMaterial.getTransparency()) * objectMaterial.getBaseColour();
 	}
 	else
 	{
-		// it's a diffuse object, no need to raytrace any further
+		// it's a diffuse object, only look for lights
 		for (unsigned i = 0; i < m_objects.size(); ++i)
 		{
-			if (m_objects[i]->getMaterial().getEmissiveColour().x > 0)
+			if (m_objects[i]->isActive())
 			{
-				// this is a light
-				Vec3f transmission = 1;
-				Vec3f lightDirection = m_objects[i]->getPosition() - phit;
-				lightDirection.normalize();
-
-				for (unsigned j = 0; j < m_objects.size(); ++j)
+				if (m_objects[i]->getMaterial().getEmissiveColour().x > 0.0f)
 				{
-					if (i != j)
+					// this is a light
+					Vec3f transmission = 1;
+					Vec3f lightDirection = m_objects[i]->getPosition() - phit;
+					lightDirection.normalize();
+
+					for (unsigned j = 0; j < m_objects.size(); ++j)
 					{
-						float t0, t1;
-						if (m_objects[j]->intersect(phit + nhit * bias, lightDirection, t0, t1))
+						if (i != j)
 						{
-							transmission = 0;
-							break;
+							if (m_objects[j]->isActive())
+							{
+								float t0, t1;
+								if (m_objects[j]->intersect(phit + nhit * bias, lightDirection, t0, t1))
+								{
+									transmission = 0;
+									break;
+								}
+							}
 						}
 					}
-				}
 
-				surfaceColor += objectMaterial.getBaseColour() * transmission * std::max(float(0), nhit.dot(lightDirection)) * m_objects[i]->getMaterial().getEmissiveColour();
+					surfaceColor += objectMaterial.getBaseColour() * transmission * std::max(float(0), nhit.dot(lightDirection)) * m_objects[i]->getMaterial().getEmissiveColour();
+				}
 			}
 		}
 	}
@@ -356,7 +397,9 @@ void Raytracer::run()
 {
 	m_currentFrame = 0;
 
-	for (int i = 0; i < 100; ++i)
+	m_imageBuffer = new Vec3f[m_width * m_height];
+
+	for (int i = 0; i < m_frameCount; ++i)
 	{
 		updateAllObjects();
 
@@ -364,6 +407,8 @@ void Raytracer::run()
 
 		m_currentFrame++;
 	}
+
+	delete[] m_imageBuffer;
 }
 
 
@@ -374,23 +419,22 @@ void Raytracer::run()
 //[/comment]
 void Raytracer::renderFrame()
 {
-	Vec3f* image = new Vec3f[m_width * m_height];
-	Vec3f* pixel = image;
+	Vec3f* pixel = m_imageBuffer;
 
 	float invWidth = 1 / float(m_width), invHeight = 1 / float(m_height);
 	float fov = 30.0f, aspectratio = m_width / float(m_height);
-	float angle = tan(M_PI * 0.5 * fov / 180.);
+	float angle = tan(M_PI * 0.5f * fov / 180.f);
 
 	// Trace rays
 	for (unsigned y = 0; y < m_height; ++y)
 	{
 		for (unsigned x = 0; x < m_width; ++x, ++pixel)
 		{
-			float xx = (2 * ((x + 0.5) * invWidth) - 1) * angle * aspectratio;
-			float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
-			Vec3f raydir(xx, yy, -1);
+			float xx = (2.0f * ((x + 0.5f) * invWidth) - 1.0f) * angle * aspectratio;
+			float yy = (1.0f - 2.0f * ((y + 0.5f) * invHeight)) * angle;
+			Vec3f raydir(xx, yy, -1.0f);
 			raydir.normalize();
-			*pixel = trace(Vec3f(0.0f), raydir, 0);
+			*pixel = trace(Vec3f(0.0f), raydir, 0.0f);
 		}
 	}
 	// Save result to a PPM image (keep these flags if you compile under Windows)
@@ -404,12 +448,11 @@ void Raytracer::renderFrame()
 	ofs << "P6\n" << m_width << " " << m_height << "\n255\n";
 	for (unsigned i = 0; i < m_width * m_height; ++i)
 	{
-		ofs << (unsigned char)(std::min(1.0f, image[i].x) * 255) <<
-			(unsigned char)(std::min(1.0f, image[i].y) * 255) <<
-			(unsigned char)(std::min(1.0f, image[i].z) * 255);
+		ofs << (unsigned char)(std::min(1.0f, m_imageBuffer[i].x) * 255.0f) <<
+			(unsigned char)(std::min(1.0f, m_imageBuffer[i].y) * 255.0f) <<
+			(unsigned char)(std::min(1.0f, m_imageBuffer[i].z) * 255.0f);
 	}
 	ofs.close();
-	delete[] image;
 }
 
 void Raytracer::basicRender()
@@ -430,7 +473,6 @@ void Raytracer::basicRender()
 	//
 	//// This creates a file, titled 1.ppm in the current working directory
 	//renderFrame();
-
 }
 
 void Raytracer::simpleShrinking()

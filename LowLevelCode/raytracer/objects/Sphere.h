@@ -7,7 +7,7 @@
 class Sphere : public Object
 {
 public:
-	Sphere(const KeyFramedValue<Vec3f>& positions, const Material& material, const KeyFramedValue<float>& radii);
+	Sphere(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material, const KeyFramedValue<float>& radiusKeyFrames);
 
 	virtual void update(float currentTime) override;
 
@@ -18,6 +18,6 @@ public:
 	float getRadiusSquared() const;
 
 private:
-	KeyFramedValue<float> m_radii;
+	KeyFramedValue<float> m_radiusKeyFrames;
 	float                 m_radiusSquared;
 };

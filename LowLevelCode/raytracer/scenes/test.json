@@ -1,73 +1,136 @@
-{"Scene": {
-	"Materials": [
-		{
-			"id": "default",
-			"baseColour": [1.0, 0.0, 0.0],
-			"emissiveColour": [0.0, 0.0, 0.0],
-			"transparency": 1.0,
-			"reflectivity": 0.0
+{
+	"Scene": {
+		"MetaData": {
+			"frame_rate": 25,
+			"frame_count": 100
 		},
-		{
-			"id": "floor",
-			"baseColour": [0.0, 1.0, 0.0],
-			"emissiveColour": [0.0, 0.0, 0.0],
-			"transparency": 1.0,
-			"reflectivity": 1.0
-		}
-	],
-	
-	"Objects": [
-		{
-			"type": "Sphere",
-			"materialId": "default",
 
-			"active_keyframes": [
-				{
-					"value": true,
-					"time": 0.0
-				}
-			],
-
-			"position_keyframes": [
-				{
-					"value": [ 0.0, 0.0, -40.0 ],
-					"time": 0.0
-				},
-				{
-					"value": [ 0.0, 0.0, -25.0 ],
-					"time": 100.0
-				}
-			],
-
-			"radius_keyframes": [
-				{
-					"value": 1.0,
-					"time": 0.0
-				},
-				{
-					"value": 3.0,
-					"time": 100.0
-				}
-			]
-		},
-		{
-			"type": "Sphere",
-			"materialId": "floor",
-			
-			"position_keyframes": [
+		"Materials": [
 			{
-				"value": [0.0, -10004.0, 0.0],
-				"time": 0.0
-			}
-			],
-			
-			"radius_keyframes": [
+				"id": "red",
+				"baseColour": [ 1.0, 0.0, 0.0 ],
+				"emissiveColour": [ 0.0, 0.0, 0.0 ],
+				"transparency": 1.0,
+				"reflectivity": 0.0
+			},
 			{
-				"value": 10000.0,
-				"time": 0.0
+				"id": "green",
+				"baseColour": [ 0.0, 1.0, 0.0 ],
+				"emissiveColour": [ 0.0, 0.0, 0.0 ],
+				"transparency": 1.0,
+				"reflectivity": 0.0
+			},
+			{
+				"id": "blue",
+				"baseColour": [ 0.0, 0.0, 1.0 ],
+				"emissiveColour": [ 0.0, 0.0, 0.0 ],
+				"transparency": 1.0,
+				"reflectivity": 0.0
+			},
+			{
+				"id": "floor",
+				"baseColour": [ 1.0, 0.2, 0.2 ],
+				"emissiveColour": [ 0.0, 0.0, 0.0 ],
+				"transparency": 1.0,
+				"reflectivity": 1.0
 			}
-			]
-		}
-	]
-}
+		],
+
+		"Objects": [
+			{
+				"type": "Sphere",
+				"materialId": "red",
+
+				"active_keyframes": [
+					{
+						"value": false,
+						"time": 0.0
+					},
+					{
+						"value": true,
+						"time": 10.0
+					}
+				],
+
+				"position_keyframes": [
+					{
+						"value": [ -20.0, 0.0, -25.0 ],
+						"time": 0.0
+					},
+					{
+						"value": [ 0.0, 0.0, -25.0 ],
+						"time": 100.0,
+						"ease_in": "overshoot"
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 1.0,
+						"time": 0.0
+					}
+				]
+			},
+
+			{
+				"type": "Sphere",
+				"materialId": "green",
+
+				"position_keyframes": [
+					{
+						"value": [ -20.0, 2.5, -25.0 ],
+						"time": 0.0
+					},
+					{
+						"value": [ 0.0, 2.5, -25.0 ],
+						"time": 100.0,
+						"ease_in": "bounce"
+					}
+				]
+			},
+
+			{
+				"type": "Sphere",
+				"materialId": "blue",
+
+				"position_keyframes": [
+					{
+						"value": [ -20.0, -2.5, -25.0 ],
+						"time": 0.0
+					},
+					{
+						"value": [ 0.0, -2.5, -25.0 ],
+						"time": 100.0,
+						"ease_in": "elastic"
+					}
+				]
+			},
+
+			{
+				"type": "Sphere",
+				"materialId": "floor",
+
+				"active_keyframes": [
+					{
+						"value": true,
+						"time": 0.0
+					}
+				],
+
+				"position_keyframes": [
+					{
+						"value": [ 0.0, -10004.0, 0.0 ],
+						"time": 0.0
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 10000.0,
+						"time": 0.0
+					}
+				]
+			}
+		]
+	}
 }

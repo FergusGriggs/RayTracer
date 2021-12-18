@@ -26,11 +26,9 @@ HeapManager::~HeapManager()
 
 void HeapManager::addHeapPtr(ManagedHeap* heap)
 {
-    //if (m_heaps == nullptr) return;
     if (heap == nullptr) return;
     if (heap->getType() == ManagedHeap::Type::eDefault) return;
 
-    //(*m_heaps)[heap->getType()] = heap;
     m_heaps[heap->getType()] = heap;
 }
 

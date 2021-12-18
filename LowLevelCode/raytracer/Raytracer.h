@@ -32,7 +32,11 @@ private:
 	unsigned int m_height = 480;
 
 	int m_currentFrame = 0;
+	int m_frameRate = 0;
+	int m_frameCount = 0;
 
 	std::vector<Object*>  m_objects;
 	std::unordered_map<std::string, Material> m_materials;
+
+	Vec3f* m_imageBuffer;
 };

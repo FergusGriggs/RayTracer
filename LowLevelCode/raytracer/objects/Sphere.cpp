@@ -2,10 +2,10 @@
 
 #include <cmath>
 
-Sphere::Sphere(const KeyFramedValue<Vec3f>& positions, const Material& material, const KeyFramedValue<float>& radii) :
-	Object(positions, material),
+Sphere::Sphere(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material, const KeyFramedValue<float>& radiusKeyFrames) :
+	Object(activeKeyFrames, positionKeyFrames, material),
 
-	m_radii(radii),
+	m_radiusKeyFrames(radiusKeyFrames),
 	m_radiusSquared(0.0f)
 {
 }
@@ -14,8 +14,8 @@ void Sphere::update(float currentTime)
 {
 	Object::update(currentTime);
 
-	m_radii.updateCurrentValue(currentTime);
-	m_radiusSquared = m_radii.getCurrentValue() * m_radii.getCurrentValue();
+	m_radiusKeyFrames.updateCurrentValue(currentTime);
+	m_radiusSquared = m_radiusKeyFrames.getCurrentValue() * m_radiusKeyFrames.getCurrentValue();
 }
 
 bool Sphere::intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, float& t1) const
@@ -43,7 +43,7 @@ bool Sphere::intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, f
 
 float Sphere::getRadius() const
 {
-	return m_radii.getCurrentValue();
+	return m_radiusKeyFrames.getCurrentValue();
 }
 
 float Sphere::getRadiusSquared() const

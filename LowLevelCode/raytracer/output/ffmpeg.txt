@@ -1,4 +1,6 @@
 assuming your output ppm files are called sphere1.ppm etc... from a console
 
 ffmpeg -framerate 25 -i spheres%d.ppm -vcodec mpeg4 output.mp4
+ffmpeg -framerate 25 -i spheres%d.ppm -c:v libx264 -preset slow -crf 0 output.mkv
+
 

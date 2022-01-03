@@ -140,7 +140,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="raytracer\bounding_box.cpp" />
     <ClCompile Include="heap_types\PhysicsHeap.cpp" />
+    <ClCompile Include="raytracer\octtree\octree_node.cpp" />
+    <ClCompile Include="raytracer\octtree\octree.cpp" />
     <ClCompile Include="raytracer\objects\ObjectLoader.cpp" />
     <ClCompile Include="raytracer\Raytracer.cpp" />
     <ClCompile Include="raytracer\Material.cpp" />
@@ -156,7 +159,10 @@
     <ClCompile Include="LowLevelCode.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="raytracer\bounding_box.h" />
     <ClInclude Include="heap_types\PhysicsHeap.h" />
+    <ClInclude Include="raytracer\octtree\octree_node.h" />
+    <ClInclude Include="raytracer\octtree\octree.h" />
     <ClInclude Include="raytracer\easings.h" />
     <ClInclude Include="raytracer\MathDefines.h" />
     <ClInclude Include="raytracer\Raytracer.h" />

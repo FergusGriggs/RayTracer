@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <algorithm>
 
 template<typename T>
 class Vec3
@@ -93,6 +94,39 @@ public:
 		return *this;
 	}
 
+	Vec3<bool> operator < (const Vec3<T>& v) const
+	{
+		Vec3<bool> result;
+
+		result.x = x < v.x;
+		result.y = y < v.y;
+		result.z = z < v.z;
+
+		return result;
+	}
+
+	Vec3<bool> operator > (const Vec3<T>& v) const
+	{
+		Vec3<bool> result;
+
+		result.x = x > v.x;
+		result.y = y > v.y;
+		result.z = z > v.z;
+
+		return result;
+	}
+
+	Vec3<bool> operator Vec3<bool>::|| (const Vec3<bool>& v) const
+	{
+		Vec3<bool> result;
+
+		result.x = x || v.x;
+		result.y = y || v.y;
+		result.z = z || v.z;
+
+		return result;
+	}
+
 	Vec3<T> operator - () const
 	{
 		return Vec3<T>(-x, -y, -z);
@@ -102,6 +136,33 @@ public:
 	{
 		os << "[" << v.x << " " << v.y << " " << v.z << "]";
 		return os;
+	}
+
+	static bool isAnyTrue(const Vec3<bool>& vec)
+	{
+		return vec.x || vec.y || vec.z;
+	}
+
+	static Vec3<T> min(const Vec3<T>& vec1, const Vec3<T> vec2)
+	{
+		Vec3<T> minVec = vec1;
+
+		minVec.x = std::min(vec1.x, vec2.x);
+		minVec.y = std::min(vec1.y, vec2.y);
+		minVec.z = std::min(vec1.z, vec2.z);
+
+		return minVec;
+	}
+
+	static Vec3<T> max(const Vec3<T>& vec1, const Vec3<T> vec2)
+	{
+		Vec3<T> maxVec = vec1;
+
+		maxVec.x = std::max(vec1.x, vec2.x);
+		maxVec.y = std::max(vec1.y, vec2.y);
+		maxVec.z = std::max(vec1.z, vec2.z);
+
+		return maxVec;
 	}
 
 	T x, y, z;

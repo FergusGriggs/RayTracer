@@ -5,6 +5,8 @@
 #include <string.h>
 
 #include "objects/Object.h"
+#include "octree/octree.h"
+#include "ray.h"
 
 class Raytracer
 {
@@ -17,23 +19,22 @@ public:
 
 	void updateAllObjects();
 
-	void basicRender();
-	void smoothScaling();
-	void simpleShrinking();
-
 	void run();
 
 	void renderFrame();
 
-	Vec3f trace(const Vec3f& rayOrigin, const Vec3f& rayDir, int depth) const;
+	Vec3f trace(const Ray& ray, int depth) const;
 
 private:
-	unsigned int m_width = 640;
-	unsigned int m_height = 480;
+	unsigned int m_width = 1280;
+	unsigned int m_height = 720;
 
 	int m_currentFrame = 0;
 	int m_frameRate = 0;
 	int m_frameCount = 0;
+	int m_samplesPerPixel = 1;
+
+	bool m_useOctree = true;
 
 	std::vector<Object*>  m_objects;
 	std::unordered_map<std::string, Material> m_materials;

@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "KeyFrame.h"
+
 #include "../Vec3.h"
 #include "../easings.h"
 

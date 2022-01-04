@@ -88,6 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -102,6 +103,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -117,6 +119,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)\includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,6 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,8 +146,8 @@
   <ItemGroup>
     <ClCompile Include="raytracer\bounding_box.cpp" />
     <ClCompile Include="heap_types\PhysicsHeap.cpp" />
-    <ClCompile Include="raytracer\octtree\octree_node.cpp" />
-    <ClCompile Include="raytracer\octtree\octree.cpp" />
+    <ClCompile Include="raytracer\octree\octree_node.cpp" />
+    <ClCompile Include="raytracer\octree\octree.cpp" />
     <ClCompile Include="raytracer\objects\ObjectLoader.cpp" />
     <ClCompile Include="raytracer\Raytracer.cpp" />
     <ClCompile Include="raytracer\Material.cpp" />
@@ -161,10 +165,11 @@
   <ItemGroup>
     <ClInclude Include="raytracer\bounding_box.h" />
     <ClInclude Include="heap_types\PhysicsHeap.h" />
-    <ClInclude Include="raytracer\octtree\octree_node.h" />
-    <ClInclude Include="raytracer\octtree\octree.h" />
+    <ClInclude Include="raytracer\octree\octree_node.h" />
+    <ClInclude Include="raytracer\octree\octree.h" />
     <ClInclude Include="raytracer\easings.h" />
     <ClInclude Include="raytracer\MathDefines.h" />
+    <ClInclude Include="raytracer\ray.h" />
     <ClInclude Include="raytracer\Raytracer.h" />
     <ClInclude Include="raytracer\objects\KeyFrame.h" />
     <ClInclude Include="raytracer\objects\KeyFramedValue.h" />
@@ -172,6 +177,7 @@
     <ClInclude Include="raytracer\Material.h" />
     <ClInclude Include="raytracer\objects\Object.h" />
     <ClInclude Include="raytracer\objects\Sphere.h" />
+    <ClInclude Include="raytracer\static_functions.h" />
     <ClInclude Include="raytracer\Vec3.h" />
     <ClInclude Include="test\GraphicsObject.h" />
     <ClInclude Include="heap_types\AudioHeap.h" />

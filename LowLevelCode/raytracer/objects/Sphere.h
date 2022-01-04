@@ -11,11 +11,12 @@ public:
 
 	virtual void update(float currentTime) override;
 
+	virtual void updateBoundingBox() override;
 	// Compute a ray-sphere intersection using the geometric solution
-	virtual bool intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, float& t1) const override;
+	virtual bool intersect(const Ray& ray, float& t0, float& t1) const override;
 
-	float getRadius() const;
-	float getRadiusSquared() const;
+	float              getRadius() const;
+	float              getRadiusSquared() const;
 
 private:
 	KeyFramedValue<float> m_radiusKeyFrames;

@@ -57,10 +57,10 @@
     <ClCompile Include="raytracer\objects\ObjectLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="raytracer\octtree\octree.cpp">
+    <ClCompile Include="raytracer\octree\octree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="raytracer\octtree\octree_node.cpp">
+    <ClCompile Include="raytracer\octree\octree_node.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="raytracer\bounding_box.cpp">
@@ -125,13 +125,19 @@
     <ClInclude Include="raytracer\easings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="raytracer\octtree\octree.h">
+    <ClInclude Include="raytracer\octree\octree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="raytracer\octtree\octree_node.h">
+    <ClInclude Include="raytracer\octree\octree_node.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="raytracer\bounding_box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="raytracer\static_functions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="raytracer\ray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

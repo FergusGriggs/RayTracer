@@ -10,29 +10,33 @@
 				"id": "red",
 				"baseColour": [ 1.0, 0.0, 0.0 ],
 				"emissiveColour": [ 0.0, 0.0, 0.0 ],
-				"transparency": 1.0,
-				"reflectivity": 0.0
+				"roughness": 0.7,
+				"metallic": 0.0,
+				"transmission": 0.0
 			},
 			{
 				"id": "green",
 				"baseColour": [ 0.0, 1.0, 0.0 ],
 				"emissiveColour": [ 0.0, 0.0, 0.0 ],
-				"transparency": 1.0,
-				"reflectivity": 0.0
+				"roughness": 0.7,
+				"metallic": 0.0,
+				"transmission": 0.0
 			},
 			{
 				"id": "blue",
 				"baseColour": [ 0.0, 0.0, 1.0 ],
 				"emissiveColour": [ 0.0, 0.0, 0.0 ],
-				"transparency": 1.0,
-				"reflectivity": 0.0
+				"roughness": 0.7,
+				"metallic": 0.0,
+				"transmission": 0.0
 			},
 			{
 				"id": "floor",
 				"baseColour": [ 1.0, 0.2, 0.2 ],
 				"emissiveColour": [ 0.0, 0.0, 0.0 ],
-				"transparency": 1.0,
-				"reflectivity": 1.0
+				"roughness": 0.7,
+				"metallic": 0.0,
+				"transmission": 0.0
 			}
 		],
 
@@ -66,7 +70,7 @@
 
 				"radius_keyframes": [
 					{
-						"value": 1.0,
+						"value": 2.0,
 						"time": 0.0
 					}
 				]
@@ -86,6 +90,13 @@
 						"time": 100.0,
 						"ease_in": "bounce"
 					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 2.0,
+						"time": 0.0
+					}
 				]
 			},
 
@@ -102,6 +113,13 @@
 						"value": [ 0.0, -2.5, -25.0 ],
 						"time": 100.0,
 						"ease_in": "elastic"
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 2.0,
+						"time": 0.0
 					}
 				]
 			},

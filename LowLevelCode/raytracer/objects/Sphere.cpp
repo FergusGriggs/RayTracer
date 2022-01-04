@@ -18,10 +18,15 @@ void Sphere::update(float currentTime)
 	m_radiusSquared = m_radiusKeyFrames.getCurrentValue() * m_radiusKeyFrames.getCurrentValue();
 }
 
-bool Sphere::intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, float& t1) const
+void Sphere::updateBoundingBox()
 {
-	Vec3f l = getPosition() - rayOrigin;
-	float tca = l.dot(rayDir);
+	m_boundingBox = BoundingBox::createFromSphere(getPosition(), getRadius());
+}
+
+bool Sphere::intersect(const Ray& ray, float& t0, float& t1) const
+{
+	Vec3f l = getPosition() - ray.m_origin;
+	float tca = l.dot(ray.m_direction);
 	if (tca < 0.0f)
 	{
 		return false;

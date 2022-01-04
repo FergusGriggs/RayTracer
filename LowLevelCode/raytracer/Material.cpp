@@ -4,17 +4,19 @@ Material::Material() :
 	m_baseColour(Vec3f(0.0f)),
 	m_emissiveColour(Vec3f(0.0f)),
 
-	m_transparency(0.0f),
-	m_reflectivity(0.0f)
+	m_roughness(0.7f),
+	m_metallic(0.0f),
+	m_transmission(0.0f)
 {
 }
 
-Material::Material(const Vec3f& baseColour, float transparency, float reflectivity, const Vec3f& emissiveColour) :
+Material::Material(const Vec3f& baseColour, float roughness, float metallic, float transmission, const Vec3f& emissiveColour) :
 	m_baseColour(baseColour),
 	m_emissiveColour(emissiveColour),
 
-	m_transparency(transparency),
-	m_reflectivity(reflectivity)
+	m_roughness(roughness),
+	m_metallic(metallic),
+	m_transmission(transmission)
 {
 }
 
@@ -45,4 +47,17 @@ float Material::getRoughness() const
 float Material::getMetallic() const
 {
 	return m_metallic;
+}
+
+bool Material::scatter(const Ray& in, const Vec3f& hitPosition, const Vec3f& hitNormal, Vec3f& attenuation, Ray& scattered) const
+{
+	if (m_metallic > 0.0f)
+	{
+		Vec3f reflected = Vec3f::reflect(in.m_direction, hitNormal);
+		scattered = Ray(hitPosition, reflected);
+		attenuation = m_baseColour;
+		return Vec3f::dot(scattered.m_direction, hitNormal) > 0.0f;
+	}
+
+	return false;
 }

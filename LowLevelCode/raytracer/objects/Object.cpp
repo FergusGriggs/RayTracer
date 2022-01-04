@@ -7,7 +7,9 @@ Object::Object(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue
     m_activeKeyFrames(activeKeyFrames),
     m_positionKeyFrames(positionKeyFrames),
 
-    m_material(material)
+    m_material(material),
+
+    m_boundingBox()
 {
 }
 
@@ -19,9 +21,15 @@ void Object::update(float currentTime)
 {
     m_activeKeyFrames.updateCurrentValue(currentTime);
     m_positionKeyFrames.updateCurrentValue(currentTime);
+
+    updateBoundingBox();
 }
 
-bool Object::intersect(const Vec3f& rayOrigin, const Vec3f& rayDir, float& t0, float& t1) const
+void Object::updateBoundingBox()
+{
+}
+
+bool Object::intersect(const Ray& ray, float& t0, float& t1) const
 {
     return false;
 }
@@ -39,6 +47,11 @@ const Vec3f& Object::getPosition() const
 const Material& Object::getMaterial() const
 {
     return m_material;
+}
+
+const BoundingBox& Object::getBoundingBox() const
+{
+    return m_boundingBox;
 }
 
 void* Object::operator new(size_t size)

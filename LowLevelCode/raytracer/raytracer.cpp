@@ -38,7 +38,9 @@
 #include "objects/Sphere.h"
 #include "Raytracer.h"
 #include "MathDefines.h"
+
 #include "easings.h"
+#include "static_functions.h"
 
 //[comment]
 // This variable controls the maximum recursion depth
@@ -218,10 +220,11 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 					Vec3f baseColour = getFloat3FromArray((*materialItr)["baseColour"].GetArray());
 					Vec3f emissiveColour = getFloat3FromArray((*materialItr)["emissiveColour"].GetArray());
 
-					float reflectivity = (*materialItr)["reflectivity"].GetFloat();
-					float transparency = (*materialItr)["transparency"].GetFloat();
+					float roughness = (*materialItr)["roughness"].GetFloat();
+					float metallic = (*materialItr)["metallic"].GetFloat();
+					float transmission = (*materialItr)["transmission"].GetFloat();
 
-					Material material(baseColour, transparency, reflectivity, emissiveColour);
+					Material material(baseColour, roughness, metallic, transmission, emissiveColour);
 					m_materials.insert({ materialId , material});
 				}
 			}
@@ -282,7 +285,7 @@ void Raytracer::updateAllObjects()
 // is the color of the object at the intersection point, otherwise it returns
 // the background color.
 //[/comment]
-Vec3f Raytracer::trace(const Vec3f &rayOrigin, const Vec3f &rayDir, int depth) const
+Vec3f Raytracer::trace(const Ray &ray, int depth) const
 {
 	//if (raydir.length() != 1) std::cerr << "Error " << raydir << std::endl;
 	float tnear = INFINITY;
@@ -293,9 +296,9 @@ Vec3f Raytracer::trace(const Vec3f &rayOrigin, const Vec3f &rayDir, int depth) c
 		float t0 = INFINITY, t1 = INFINITY;
 		if (m_objects[i]->isActive())
 		{
-			if (m_objects[i]->intersect(rayOrigin, rayDir, t0, t1))
+			if (m_objects[i]->intersect(ray, t0, t1))
 			{
-				if (t0 < 0) t0 = t1;
+				if (t0 < 0.00001f) t0 = t1;
 				if (t0 < tnear)
 				{
 					tnear = t0;
@@ -304,93 +307,107 @@ Vec3f Raytracer::trace(const Vec3f &rayOrigin, const Vec3f &rayDir, int depth) c
 			}
 		}
 	}
-	// if there's no intersection return white
+	// if there's no intersection return a sky gradient
 	if (object == nullptr)
 	{
-		return Vec3f(1.0f);
+		float t = 0.5f * (ray.m_direction.y + 1.0f);
+		return Vec3f(1.0f, 1.0f, 1.0f) * (1.0f - t) + Vec3f(0.5f, 0.7f, 1.0f) * t;
 	}
 
 	const Material& objectMaterial = object->getMaterial();
 
 	Vec3f surfaceColor = 0; // color of the ray/surfaceof the object intersected by the ray
-	Vec3f phit = rayOrigin + rayDir * tnear; // point of intersection
-	Vec3f nhit = phit - object->getPosition(); // normal at the intersection point
-	nhit.normalize(); // normalize normal direction
-					  // If the normal and the view direction are not opposite to each other
-					  // reverse the normal direction. That also means we are inside the sphere so set
-					  // the inside bool to true. Finally reverse the sign of IdotN which we want
-					  // positive.
-	float bias = 1e-3; // add some bias to the point from which we will be tracing
+	Vec3f intersectPoint = ray.m_origin + ray.m_direction * tnear; // point of intersection
+	Vec3f intersectNormal = intersectPoint - object->getPosition(); // normal at the intersection point
+	intersectNormal.normalize(); // normalize normal direction
+					             // If the normal and the view direction are not opposite to each other
+					             // reverse the normal direction. That also means we are inside the sphere so set
+					             // the inside bool to true. Finally reverse the sign of IdotN which we want
+					             // positive.
+	float bias = 1e-3f; // add some bias to the point from which we will be tracing
 	bool inside = false;
 
-	if (rayDir.dot(nhit) > 0.0f)
+	if (ray.m_direction.dot(intersectNormal) > 0.0f)
 	{
-		nhit = -nhit; 
+		intersectNormal = -intersectNormal;
 		inside = true;
 	}
 
-	if (objectMaterial.getTransparency() > 0.0f || objectMaterial.getReflectivity() > 0.0f && depth < MAX_RAY_DEPTH)
+	Ray scattered;
+	Vec3f attenuation;
+	if (objectMaterial.scatter(ray, intersectPoint, intersectNormal, attenuation, scattered))
 	{
-		float facingRatio = -rayDir.dot(nhit);
-		// change the mix value to tweak the effect
-		float fresnel = pow(fminf(1.0f, fmaxf(0.0f, 1.0f - facingRatio)), 5.0f);
-		// compute reflection direction (not need to normalize because all vectors
-		// are already normalized)
-		Vec3f reflDir = rayDir - nhit * 2.0f * rayDir.dot(nhit);
-		reflDir.normalize();
-		Vec3f reflection = trace(phit + nhit * bias, reflDir, depth + 1.0f);
+		return attenuation * trace(scattered, depth - 1);
+	}
 		
-		Vec3f refraction = objectMaterial.getBaseColour();
-		// if the sphere is also transparent compute refraction ray (transmission)
-		if (objectMaterial.getTransparency())
-		{
-			float ior = 1.1f, eta = (inside) ? ior : 1.0f / ior; // are we inside or outside the surface?
-			float cosi = -nhit.dot(rayDir);
-			float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
-			Vec3f refrDir = rayDir * eta + nhit * (eta *  cosi - sqrt(k));
-			refrDir.normalize();
-			refraction = trace(phit - nhit * bias, refrDir, depth + 1.0f);
-		}
-		// the result is a mix of reflection and refraction (if the sphere is transparent)
-		surfaceColor = (reflection * fresnel + refraction * (1.0f - fresnel) * objectMaterial.getTransparency()) * objectMaterial.getBaseColour();
-	}
-	else
-	{
-		// it's a diffuse object, only look for lights
-		for (unsigned i = 0; i < m_objects.size(); ++i)
-		{
-			if (m_objects[i]->isActive())
-			{
-				if (m_objects[i]->getMaterial().getEmissiveColour().x > 0.0f)
-				{
-					// this is a light
-					Vec3f transmission = 1;
-					Vec3f lightDirection = m_objects[i]->getPosition() - phit;
-					lightDirection.normalize();
+	return Vec3f(0.0f);
 
-					for (unsigned j = 0; j < m_objects.size(); ++j)
-					{
-						if (i != j)
-						{
-							if (m_objects[j]->isActive())
-							{
-								float t0, t1;
-								if (m_objects[j]->intersect(phit + nhit * bias, lightDirection, t0, t1))
-								{
-									transmission = 0;
-									break;
-								}
-							}
-						}
-					}
+	/*Vec3f target = intersectPoint + intersectNormal + Vec3f::randomDirection();
+	Ray ray(intersectPoint, target - intersectPoint);
+	return trace(ray, depth + 1) * 0.5f;*/
 
-					surfaceColor += objectMaterial.getBaseColour() * transmission * std::max(float(0), nhit.dot(lightDirection)) * m_objects[i]->getMaterial().getEmissiveColour();
-				}
-			}
-		}
-	}
+	//if (objectMaterial.getTransparency() > 0.0f || objectMaterial.getReflectivity() > 0.0f && depth < MAX_RAY_DEPTH)
+	//{
+	//	float facingRatio = -rayDir.dot(nhit);
+	//	// change the mix value to tweak the effect
+	//	float fresnel = pow(fminf(1.0f, fmaxf(0.0f, 1.0f - facingRatio)), 5.0f);
+	//	// compute reflection direction (not need to normalize because all vectors
+	//	// are already normalized)
+	//	Vec3f reflDir = rayDir - nhit * 2.0f * rayDir.dot(nhit);
+	//	reflDir.normalize();
+	//	Vec3f reflection = trace(phit + nhit * bias, reflDir, depth + 1.0f);
+	//	
+	//	Vec3f refraction = objectMaterial.getBaseColour();
+	//	// if the sphere is also transparent compute refraction ray (transmission)
+	//	if (objectMaterial.getTransparency())
+	//	{
+	//		float ior = 1.1f, eta = (inside) ? ior : 1.0f / ior; // are we inside or outside the surface?
+	//		float cosi = -nhit.dot(rayDir);
+	//		float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
+	//		Vec3f refrDir = rayDir * eta + nhit * (eta *  cosi - sqrt(k));
+	//		refrDir.normalize();
+	//		refraction = trace(phit - nhit * bias, refrDir, depth + 1.0f);
+	//	}
+	//	// the result is a mix of reflection and refraction (if the sphere is transparent)
+	//	surfaceColor = (reflection * fresnel + refraction * (1.0f - fresnel) * objectMaterial.getTransparency()) * objectMaterial.getBaseColour();
+	//}
+	//else
+	//{
+	//	// it's a diffuse object, only look for lights
+	//	for (unsigned i = 0; i < m_objects.size(); ++i)
+	//	{
+	//		if (m_objects[i]->isActive())
+	//		{
+	//			if (m_objects[i]->getMaterial().getEmissiveColour().x > 0.0f)
+	//			{
+	//				// this is a light
+	//				Vec3f transmission = 1;
+	//				Vec3f lightDirection = m_objects[i]->getPosition() - phit;
+	//				lightDirection.normalize();
 
-	return surfaceColor + objectMaterial.getEmissiveColour();
+	//				for (unsigned j = 0; j < m_objects.size(); ++j)
+	//				{
+	//					if (i != j)
+	//					{
+	//						if (m_objects[j]->isActive())
+	//						{
+	//							float t0, t1;
+	//							if (m_objects[j]->intersect(phit + nhit * bias, lightDirection, t0, t1))
+	//							{
+	//								transmission = 0;
+	//								break;
+	//							}
+	//						}
+	//					}
+	//				}
+
+	//				surfaceColor += objectMaterial.getBaseColour() * transmission * std::max(float(0), nhit.dot(lightDirection)) * m_objects[i]->getMaterial().getEmissiveColour();
+	//			}
+	//		}
+	//	}
+	//}
+
+	//return surfaceColor + objectMaterial.getEmissiveColour();
 }
 
 void Raytracer::run()
@@ -419,24 +436,44 @@ void Raytracer::run()
 //[/comment]
 void Raytracer::renderFrame()
 {
+	//Octree octree = Octree();
+
 	Vec3f* pixel = m_imageBuffer;
 
-	float invWidth = 1 / float(m_width), invHeight = 1 / float(m_height);
+	float invWidth = 1.0f / float(m_width), invHeight = 1.0f / float(m_height);
 	float fov = 30.0f, aspectratio = m_width / float(m_height);
 	float angle = tan(M_PI * 0.5f * fov / 180.f);
 
 	// Trace rays
-	for (unsigned y = 0; y < m_height; ++y)
+	for (float y = 0.0f; y < m_height; ++y)
 	{
-		for (unsigned x = 0; x < m_width; ++x, ++pixel)
+		for (float x = 0.0f; x < m_width; ++x, ++pixel)
 		{
-			float xx = (2.0f * ((x + 0.5f) * invWidth) - 1.0f) * angle * aspectratio;
-			float yy = (1.0f - 2.0f * ((y + 0.5f) * invHeight)) * angle;
-			Vec3f raydir(xx, yy, -1.0f);
-			raydir.normalize();
-			*pixel = trace(Vec3f(0.0f), raydir, 0.0f);
+			Vec3f pixelColour;
+
+			for (int sampleIndex = 0; sampleIndex < m_samplesPerPixel; ++sampleIndex)
+			{
+				float u = x + static_functions::randomNegativeOneToOne();
+				float v = y + static_functions::randomNegativeOneToOne();
+
+				float xx = (2.0f * ((u + 0.5f) * invWidth) - 1.0f) * angle * aspectratio;
+				float yy = (1.0f - 2.0f * ((v + 0.5f) * invHeight)) * angle;
+				Vec3f raydir(xx, yy, -1.0f);
+				raydir.normalize();
+
+				Ray ray(Vec3f(0.0f), raydir);
+				pixelColour += trace(ray, 0);
+			}
+
+			float scale = 1.0f / float(m_samplesPerPixel);
+			pixelColour.x = sqrt(scale * pixelColour.x);
+			pixelColour.y = sqrt(scale * pixelColour.y);
+			pixelColour.z = sqrt(scale * pixelColour.z);
+
+			*pixel = pixelColour;
 		}
 	}
+
 	// Save result to a PPM image (keep these flags if you compile under Windows)
 	std::stringstream ss;
 	ss << "raytracer/output/spheres" << m_currentFrame << ".ppm";
@@ -453,89 +490,6 @@ void Raytracer::renderFrame()
 			(unsigned char)(std::min(1.0f, m_imageBuffer[i].z) * 255.0f);
 	}
 	ofs.close();
-}
 
-void Raytracer::basicRender()
-{
-	//removeAllObjects();
-	//m_currentFrame = 0;
-
-	//Material groundMaterial = Material(Vec3f(0.2f, 0.2f, 0.2f));
-
-	//Material sphereMaterial1 = Material(Vec3f(1.0f, 0.32f, 0.36f), 1.0f, 0.5f);
-	//Material sphereMaterial2 = Material(Vec3f(0.9f, 0.76f, 0.46f), 1.0f, 0.0f);
-	//Material sphereMaterial3 = Material(Vec3f(0.65f, 0.77f, 0.97f), 1.0f, 0.0f);
-
-	//m_objects.push_back(new Sphere(Vec3f(0.0f, -10004.0f, -20.0f), groundMaterial, 10000.0f));
-	//m_objects.push_back(new Sphere(Vec3f(0.0f, 0.0f, -20.0f), sphereMaterial1, 4.0f));
-	//m_objects.push_back(new Sphere(Vec3f(5.0f, -1.0f, -15.0f), sphereMaterial2, 2.0f));
-	//m_objects.push_back(new Sphere(Vec3f(5.0f, 0.0f, -25.0f), sphereMaterial3, 3.0f));
-	//
-	//// This creates a file, titled 1.ppm in the current working directory
-	//renderFrame();
-}
-
-void Raytracer::simpleShrinking()
-{
-	//std::vector<Object*> objects;
-
-	//Material groundMaterial = Material(Vec3f(0.2f, 0.2f, 0.2f));
-
-	//Material sphereMaterial1 = Material(Vec3f(1.0f, 0.32f, 0.36f), 1.0f, 0.5f);
-	//Material sphereMaterial2 = Material(Vec3f(0.9f, 0.76f, 0.46f), 1.0f, 0.0f);
-	//Material sphereMaterial3 = Material(Vec3f(0.65f, 0.77f, 0.97f), 1.0f, 0.0f);
-
-	//for (int i = 0; i < 4; i++)
-	//{
-	//	objects.push_back(new Sphere(Vec3f(0.0f, -10004.0f, -20.0f), groundMaterial, 10000.0f));
-
-	//	if (i == 0)
-	//	{
-	//		objects.push_back(new Sphere(Vec3f(0.0f, 0.0f, -20.0f), sphereMaterial1, 4.0f)); // The radius paramter is the value we will change
-	//	}
-	//	else if (i == 1)
-	//	{
-	//		objects.push_back(new Sphere(Vec3f(0.0f, 0.0f, -20.0f), sphereMaterial1, 3.0f)); // Radius--
-	//	}
-	//	else if (i == 2)
-	//	{
-	//		objects.push_back(new Sphere(Vec3f(0.0f, 0.0f, -20.0f), sphereMaterial1, 2.0f)); // Radius--
-	//	}
-	//	else if (i == 3)
-	//	{
-	//		objects.push_back(new Sphere(Vec3f(0.0f, 0.0f, -20.0f), sphereMaterial1, 1.0f)); // Radius--
-	//	}
-
-	//	objects.push_back(new Sphere(Vec3f(5.0f, -1.0f, -15.0f), sphereMaterial2, 2.0f));
-	//	objects.push_back(new Sphere(Vec3f(5.0f, 0.0f, -25.0f), sphereMaterial3, 3.0f));
-
-	//	renderFrame();
-
-	//	removeAllObjects();
-	//}
-}
-
-void Raytracer::smoothScaling()
-{
-	//m_currentFrame = 0;
-	//Material groundMaterial = Material(Vec3f(0.2f, 0.2f, 0.2f));
-
-	//Material sphereMaterial1 = Material(Vec3f(1.0f, 0.32f, 0.36f), 1.0f, 0.5f);
-	//Material sphereMaterial2 = Material(Vec3f(0.9f, 0.76f, 0.46f), 1.0f, 0.0f);
-	//Material sphereMaterial3 = Material(Vec3f(0.65f, 0.77f, 0.97f), 1.0f, 0.0f);
-
-	//for (int frame = 0; frame <= 100; frame++)
-	//{
-	//	m_objects.push_back(new Sphere(Vec3f(0.0f, -10004.0f, -20.0f), groundMaterial, 10000.0f));
-	//	m_objects.push_back(new Sphere(Vec3f(0.0f, 0.0f, -20.0f), sphereMaterial1, static_cast<float>(frame) / 100.0f)); // Radius++ change here
-	//	m_objects.push_back(new Sphere(Vec3f(5.0f, -1.0f, -15.0f), sphereMaterial2, 2.0f));
-	//	m_objects.push_back(new Sphere(Vec3f(5.0f, 0.0f, -25.0f), sphereMaterial3, 3.0f));
-
-	//	renderFrame();
-
-	//	std::cout << "Rendered and saved spheres" << frame << ".ppm" << std::endl;
-
-	//	removeAllObjects();
-	//	m_currentFrame++;
-	//}
+	std::cout << "Rendered F" << m_currentFrame << '\n';
 }

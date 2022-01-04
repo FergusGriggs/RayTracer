@@ -23,11 +23,11 @@
 				"transmission": 0.0
 			},
 			{
-				"id": "blue",
-				"baseColour": [ 0.0, 0.0, 1.0 ],
+				"id": "metal",
+				"baseColour": [ 0.8, 0.8, 0.8 ],
 				"emissiveColour": [ 0.0, 0.0, 0.0 ],
-				"roughness": 0.7,
-				"metallic": 0.0,
+				"roughness": 0.0,
+				"metallic": 1.0,
 				"transmission": 0.0
 			},
 			{
@@ -47,12 +47,8 @@
 
 				"active_keyframes": [
 					{
-						"value": false,
-						"time": 0.0
-					},
-					{
 						"value": true,
-						"time": 10.0
+						"time": 0.0
 					}
 				],
 
@@ -102,7 +98,7 @@
 
 			{
 				"type": "Sphere",
-				"materialId": "blue",
+				"materialId": "metal",
 
 				"position_keyframes": [
 					{

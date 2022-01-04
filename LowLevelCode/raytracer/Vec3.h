@@ -48,7 +48,7 @@ public:
 
 	T dot(const Vec3<T>& vec) const
 	{
-		
+		return x * vec.x + y * vec.y + z * vec.z;
 	}
 
 	T length2() const
@@ -159,9 +159,22 @@ public:
 		return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
 	}
 
+	static Vec3<T> normalise(const Vec3<float>& vec)
+	{
+		T lengthSquared = vec.length2();
+		if (lengthSquared < 0.00001f)
+		{
+			return Vec3<T>(0, 1, 0);
+		}
+
+		T invNor = 1.0f / sqrt(lengthSquared);
+
+		return Vec3<T>(vec.x * invNor, vec.y * invNor, vec.z * invNor);
+	}
+
 	static Vec3<float> reflect(const Vec3<float>& incident, const Vec3<float>& normal)
 	{
-		return incident - 2.0f * Vec3<float>::dot(normal, incident) * normal;
+		return incident - normal * 2.0f * Vec3<float>::dot(normal, incident);
 	}
 
 	static Vec3<T> min(const Vec3<T>& vec1, const Vec3<T>& vec2)

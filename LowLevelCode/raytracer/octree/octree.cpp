@@ -1,19 +1,21 @@
 #include "octree.h"
 
-Octree::Octree()
+Octree::Octree() :
+	m_root(nullptr)
 {
 }
 
 Octree::~Octree()
 {
+	clear();
 }
 
-void Octree::initialise(std::vector<Object*>& sceneObjects)
+void Octree::initialise(std::vector<ObjectSnapshot*>& sceneObjects)
 {
 	BoundingBox sceneBoundingBox;
 	for (int sceneObjectIndex = 0; sceneObjectIndex < sceneObjects.size(); ++sceneObjectIndex)
 	{
-		sceneBoundingBox.mergeWithBoundingBox(sceneObjects[sceneObjectIndex]->getBoundingBox());
+		sceneBoundingBox.mergeWithBoundingBox(sceneObjects[sceneObjectIndex]->m_boundingBox);
 	}
 
 	m_root = new OctreeNode();
@@ -23,11 +25,13 @@ void Octree::initialise(std::vector<Object*>& sceneObjects)
 	{
 		m_root->insertObject(sceneObjects[sceneObjectIndex]);
 	}
+
+	m_potentialObjects.reserve(sceneObjects.size());
 }
 
-void Octree::rayTrace(const Vec3f& rayOrigin, const Vec3f& rayDirection, std::vector<Object*>& collidingObjects)
+void Octree::rayTrace(const Ray& ray, Vec3)
 {
-	m_root->rayTrace(rayOrigin, rayDirection, collidingObjects);
+	m_root->rayTrace(ray);
 }
 
 void Octree::clear()

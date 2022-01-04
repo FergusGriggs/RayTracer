@@ -267,14 +267,6 @@ void Raytracer::removeAllObjects()
 	m_objects.clear();
 }
 
-void Raytracer::updateAllObjects()
-{
-	for (auto& object : m_objects)
-	{
-		object->update(static_cast<float>(m_currentFrame));
-	}
-}
-
 //[comment]
 // This is the main trace function. It takes a ray as argument (defined by its origin
 // and direction). We test if this ray intersects any of the geometry in the scene.
@@ -285,28 +277,26 @@ void Raytracer::updateAllObjects()
 // is the color of the object at the intersection point, otherwise it returns
 // the background color.
 //[/comment]
-Vec3f Raytracer::trace(const Ray &ray, int depth) const
+Vec3f Raytracer::trace(const Ray &ray, int depth, std::vector<ObjectSnapshot*>& objects) const
 {
 	//if (raydir.length() != 1) std::cerr << "Error " << raydir << std::endl;
 	float tnear = INFINITY;
-	const Object* object = nullptr;
+	const ObjectSnapshot* object = nullptr;
 	// find intersection of this ray with the sphere in the scene
-	for (unsigned i = 0; i < m_objects.size(); ++i)
+	for (unsigned i = 0; i < objects.size(); ++i)
 	{
 		float t0 = INFINITY, t1 = INFINITY;
-		if (m_objects[i]->isActive())
+		if (objects[i]->intersect(ray, t0, t1))
 		{
-			if (m_objects[i]->intersect(ray, t0, t1))
+			if (t0 < 0.00001f) t0 = t1;
+			if (t0 < tnear)
 			{
-				if (t0 < 0.00001f) t0 = t1;
-				if (t0 < tnear)
-				{
-					tnear = t0;
-					object = m_objects[i];
-				}
+				tnear = t0;
+				object = objects[i];
 			}
 		}
 	}
+
 	// if there's no intersection return a sky gradient
 	if (object == nullptr)
 	{
@@ -314,11 +304,8 @@ Vec3f Raytracer::trace(const Ray &ray, int depth) const
 		return Vec3f(1.0f, 1.0f, 1.0f) * (1.0f - t) + Vec3f(0.5f, 0.7f, 1.0f) * t;
 	}
 
-	const Material& objectMaterial = object->getMaterial();
-
-	Vec3f surfaceColor = 0; // color of the ray/surfaceof the object intersected by the ray
 	Vec3f intersectPoint = ray.m_origin + ray.m_direction * tnear; // point of intersection
-	Vec3f intersectNormal = intersectPoint - object->getPosition(); // normal at the intersection point
+	Vec3f intersectNormal = intersectPoint - object->m_position; // normal at the intersection point
 	intersectNormal.normalize(); // normalize normal direction
 					             // If the normal and the view direction are not opposite to each other
 					             // reverse the normal direction. That also means we are inside the sphere so set
@@ -333,20 +320,20 @@ Vec3f Raytracer::trace(const Ray &ray, int depth) const
 		inside = true;
 	}
 
-	Ray scattered;
-	Vec3f attenuation;
-	if (objectMaterial.scatter(ray, intersectPoint, intersectNormal, attenuation, scattered))
+	if (depth < MAX_RAY_DEPTH)
 	{
-		return attenuation * trace(scattered, depth - 1);
+		Ray scattered;
+		Vec3f attenuation;
+		if (object->m_material.scatter(ray, intersectPoint, intersectNormal, attenuation, scattered))
+		{
+			return attenuation * trace(scattered, depth + 1, objects);
+		}
+
 	}
-		
+	
 	return Vec3f(0.0f);
 
-	/*Vec3f target = intersectPoint + intersectNormal + Vec3f::randomDirection();
-	Ray ray(intersectPoint, target - intersectPoint);
-	return trace(ray, depth + 1) * 0.5f;*/
-
-	//if (objectMaterial.getTransparency() > 0.0f || objectMaterial.getReflectivity() > 0.0f && depth < MAX_RAY_DEPTH)
+	//if (objectMaterial.getTransparency() > 0.0f || objectMaterial.getReflectivity() > 0.0f && )
 	//{
 	//	float facingRatio = -rayDir.dot(nhit);
 	//	// change the mix value to tweak the effect
@@ -410,19 +397,50 @@ Vec3f Raytracer::trace(const Ray &ray, int depth) const
 	//return surfaceColor + objectMaterial.getEmissiveColour();
 }
 
+Vec3f Raytracer::octreeTrace(const Ray& ray, int depth, Octree& octree) const
+{
+	ObjectSnapshot* objectSnapshot = nullptr;
+	Vec3f intersectPoint;
+	Vec3f intersectNormal;
+
+	octree.rayTrace(ray, intersectPoint, intersectNormal, objectSnapshot);
+
+	// if there's no intersection return a sky gradient
+	if (objectSnapshot == nullptr)
+	{
+		float t = 0.5f * (ray.m_direction.y + 1.0f);
+		return Vec3f(1.0f, 1.0f, 1.0f) * (1.0f - t) + Vec3f(0.5f, 0.7f, 1.0f) * t;
+	}
+
+	float bias = 1e-3f; // add some bias to the point from which we will be tracing
+	bool inside = false;
+
+	if (ray.m_direction.dot(intersectNormal) > 0.0f)
+	{
+		intersectNormal = -intersectNormal;
+		inside = true;
+	}
+
+	if (depth < MAX_RAY_DEPTH)
+	{
+		Ray scattered;
+		Vec3f attenuation;
+		if (object->m_material.scatter(ray, intersectPoint, intersectNormal, attenuation, scattered))
+		{
+			return attenuation * trace(scattered, depth + 1, objects);
+		}
+	}
+
+	return Vec3f(0.0f);
+}
+
 void Raytracer::run()
 {
-	m_currentFrame = 0;
-
 	m_imageBuffer = new Vec3f[m_width * m_height];
 
 	for (int i = 0; i < m_frameCount; ++i)
 	{
-		updateAllObjects();
-
-		renderFrame();
-
-		m_currentFrame++;
+		renderFrameAtTime(static_cast<float>(i));
 	}
 
 	delete[] m_imageBuffer;
@@ -434,10 +452,26 @@ void Raytracer::run()
 // trace it and return a color. If the ray hits a sphere, we return the color of the
 // sphere at the intersection point, else we return the background color.
 //[/comment]
-void Raytracer::renderFrame()
+void Raytracer::renderFrameAtTime(float time)
 {
-	//Octree octree = Octree();
+	std::vector<ObjectSnapshot*> allFrameObjects;
+	for (int objectIndex = 0; objectIndex < m_objects.size(); ++objectIndex)
+	{
+		ObjectSnapshot* objectSnapshot = m_objects[objectIndex]->generateObjectSnapShotAtTime(time);
 
+		if (objectSnapshot != nullptr)
+		{
+			objectSnapshot->createBoundingBox();
+			allFrameObjects.push_back(objectSnapshot);
+		}
+	}
+
+	Octree octree;
+	if (m_useOctree)
+	{
+		octree.initialise(allFrameObjects);
+	}
+	
 	Vec3f* pixel = m_imageBuffer;
 
 	float invWidth = 1.0f / float(m_width), invHeight = 1.0f / float(m_height);
@@ -453,8 +487,8 @@ void Raytracer::renderFrame()
 
 			for (int sampleIndex = 0; sampleIndex < m_samplesPerPixel; ++sampleIndex)
 			{
-				float u = x + static_functions::randomNegativeOneToOne();
-				float v = y + static_functions::randomNegativeOneToOne();
+				float u = x + static_functions::randomNegativeOneToOne() * 0.5f;
+				float v = y + static_functions::randomNegativeOneToOne() * 0.5f;
 
 				float xx = (2.0f * ((u + 0.5f) * invWidth) - 1.0f) * angle * aspectratio;
 				float yy = (1.0f - 2.0f * ((v + 0.5f) * invHeight)) * angle;
@@ -462,7 +496,15 @@ void Raytracer::renderFrame()
 				raydir.normalize();
 
 				Ray ray(Vec3f(0.0f), raydir);
-				pixelColour += trace(ray, 0);
+
+				if (m_useOctree)
+				{
+					pixelColour += octreeTrace(ray, 0, octree);
+				}
+				else
+				{
+					pixelColour += trace(ray, 0, allFrameObjects);
+				}
 			}
 
 			float scale = 1.0f / float(m_samplesPerPixel);
@@ -474,9 +516,14 @@ void Raytracer::renderFrame()
 		}
 	}
 
+	for (int objectIndex = 0; objectIndex < allFrameObjects.size(); ++objectIndex)
+	{
+		delete allFrameObjects[objectIndex];
+	}
+
 	// Save result to a PPM image (keep these flags if you compile under Windows)
 	std::stringstream ss;
-	ss << "raytracer/output/spheres" << m_currentFrame << ".ppm";
+	ss << "raytracer/output/spheres" << static_cast<int>(time) << ".ppm";
 
 	std::string tempString = ss.str();
 	char* filename = (char*)tempString.c_str();
@@ -491,5 +538,5 @@ void Raytracer::renderFrame()
 	}
 	ofs.close();
 
-	std::cout << "Rendered F" << m_currentFrame << '\n';
+	std::cout << "Rendered F" << static_cast<int>(time) << '\n';
 }

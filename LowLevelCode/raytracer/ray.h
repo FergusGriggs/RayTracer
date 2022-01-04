@@ -12,7 +12,7 @@ struct Ray
 
     Ray(const Vec3f& origin, const Vec3f& direction) :
         m_origin(origin),
-        m_direction(direction)
+        m_direction(Vec3f::normalise(direction))
     {
     }
 

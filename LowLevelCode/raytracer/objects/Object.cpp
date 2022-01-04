@@ -7,9 +7,7 @@ Object::Object(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue
     m_activeKeyFrames(activeKeyFrames),
     m_positionKeyFrames(positionKeyFrames),
 
-    m_material(material),
-
-    m_boundingBox()
+    m_material(material)
 {
 }
 
@@ -17,41 +15,19 @@ Object::~Object()
 {
 }
 
-void Object::update(float currentTime)
-{
-    m_activeKeyFrames.updateCurrentValue(currentTime);
-    m_positionKeyFrames.updateCurrentValue(currentTime);
-
-    updateBoundingBox();
-}
-
-void Object::updateBoundingBox()
-{
-}
-
-bool Object::intersect(const Ray& ray, float& t0, float& t1) const
-{
-    return false;
-}
-
-bool Object::isActive() const
-{
-    return m_activeKeyFrames.getCurrentValue();
-}
-
-const Vec3f& Object::getPosition() const
-{
-    return m_positionKeyFrames.getCurrentValue();
-}
-
 const Material& Object::getMaterial() const
 {
     return m_material;
 }
 
-const BoundingBox& Object::getBoundingBox() const
+ObjectSnapshot* Object::generateObjectSnapShotAtTime(float time) const
 {
-    return m_boundingBox;
+    if (m_activeKeyFrames.getValueAtTime(time))
+    {
+        return new ObjectSnapshot(m_positionKeyFrames.getValueAtTime(time), m_material);
+    }
+
+    return nullptr;
 }
 
 void* Object::operator new(size_t size)

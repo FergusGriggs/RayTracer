@@ -17,10 +17,10 @@ bool OctreeNode::initialise(const BoundingBox& boundingBox)
 	return true;
 }
 
-bool OctreeNode::insertObject(Object* object, bool forceAdd)
+bool OctreeNode::insertObject(ObjectSnapshot* object, bool forceAdd)
 {
 	// If contained in its cuboid and the octree has not been finalized/processed (empty children are deleted and may break adding operatons)
-	if (forceAdd || (m_boundingBox.contains(object->getBoundingBox()) && !m_processed))
+	if (forceAdd || (m_boundingBox.contains(object->m_boundingBox) && !m_processed))
 	{
 		if (m_hasChildren)
 		{
@@ -116,19 +116,19 @@ void OctreeNode::cullEmptyChildrenAndFilterTempPools()
 	m_processed = true;
 }
 
-void OctreeNode::rayTrace(const Vec3f& rayOrigin, const Vec3f& rayDirection, std::vector<Object*>& collidingObjects)
+void OctreeNode::rayTrace(const Ray& ray, std::vector<ObjectSnapshot*>& collidingObjects)
 {
 	Vec3f invDir = Vec3f(0.0f);
 
-	invDir.x = 1.0f / rayOrigin.x;
-	invDir.y = 1.0f / rayOrigin.y;
-	invDir.z = 1.0f / rayOrigin.z;
+	invDir.x = 1.0f / ray.m_origin.x;
+	invDir.y = 1.0f / ray.m_origin.y;
+	invDir.z = 1.0f / ray.m_origin.z;
 
-	if (m_boundingBox.intersects(rayOrigin, rayDirection, invDir))
+	if (m_boundingBox.intersects(ray, invDir))
 	{
 		for (int i = 0; i < m_confirmedPool.size(); ++i)
 		{
-			if (m_confirmedPool[i]->getBoundingBox().intersects(rayOrigin, rayDirection, invDir))
+			if (m_confirmedPool[i]->m_boundingBox.intersects(ray, invDir))
 			{
 				collidingObjects.push_back(m_confirmedPool[i]);
 			}
@@ -138,7 +138,7 @@ void OctreeNode::rayTrace(const Vec3f& rayOrigin, const Vec3f& rayDirection, std
 		{
 			for (int i = 0; i < m_children.size(); ++i)
 			{
-				m_children[i]->rayTrace(rayOrigin, rayDirection, collidingObjects);
+				m_children[i]->rayTrace(ray, collidingObjects);
 			}
 		}
 	}

@@ -58,6 +58,17 @@ bool Material::scatter(const Ray& in, const Vec3f& hitPosition, const Vec3f& hit
 		attenuation = m_baseColour;
 		return Vec3f::dot(scattered.m_direction, hitNormal) > 0.0f;
 	}
+	else if (m_transmission > 0.0f)
+	{
+
+	}
+	else
+	{
+		Vec3f target = hitPosition + hitNormal + Vec3f::randomDirection();
+		scattered = Ray(hitPosition, target - hitPosition);
+		attenuation = m_baseColour;
+		return Vec3f::dot(scattered.m_direction, hitNormal) > 0.0f;
+	}
 
 	return false;
 }

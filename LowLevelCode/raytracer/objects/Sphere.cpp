@@ -10,48 +10,12 @@ Sphere::Sphere(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue
 {
 }
 
-void Sphere::update(float currentTime)
+ObjectSnapshot* Sphere::generateObjectSnapShotAtTime(float time) const
 {
-	Object::update(currentTime);
-
-	m_radiusKeyFrames.updateCurrentValue(currentTime);
-	m_radiusSquared = m_radiusKeyFrames.getCurrentValue() * m_radiusKeyFrames.getCurrentValue();
-}
-
-void Sphere::updateBoundingBox()
-{
-	m_boundingBox = BoundingBox::createFromSphere(getPosition(), getRadius());
-}
-
-bool Sphere::intersect(const Ray& ray, float& t0, float& t1) const
-{
-	Vec3f l = getPosition() - ray.m_origin;
-	float tca = l.dot(ray.m_direction);
-	if (tca < 0.0f)
+	if (m_activeKeyFrames.getValueAtTime(time))
 	{
-		return false;
+		return new SphereSnapshot(m_positionKeyFrames.getValueAtTime(time), m_radiusKeyFrames.getValueAtTime(time), m_material);
 	}
-
-	float d2 = l.dot(l) - tca * tca;
-	if (d2 > m_radiusSquared)
-	{
-		return false;
-	}
-
-	float thc = sqrt(m_radiusSquared - d2);
-
-	t0 = tca - thc;
-	t1 = tca + thc;
-
-	return true;
-}
-
-float Sphere::getRadius() const
-{
-	return m_radiusKeyFrames.getCurrentValue();
-}
-
-float Sphere::getRadiusSquared() const
-{
-	return m_radiusSquared;
+	
+	return nullptr;
 }

@@ -6,22 +6,42 @@
 #include "KeyFramedValue.h"
 #include "../bounding_box.h"
 
+struct ObjectSnapshot
+{
+    ObjectSnapshot(const Vec3f& position, const Material& material) :
+        m_position(position),
+        m_material(material)
+    {
+    }
+
+    virtual ~ObjectSnapshot()
+    {
+    }
+
+    virtual void createBoundingBox()
+    {
+    }
+
+    virtual bool intersect(const Ray& ray, float& t0, float& t1) const
+    {
+        return false;
+    }
+
+    Vec3f             m_position;
+    const Material&   m_material;
+
+    BoundingBox       m_boundingBox;
+};
+
 class Object
 {
 public:
     Object(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material);
     virtual ~Object();
 
-    virtual void update(float currentTime);
+    virtual ObjectSnapshot* generateObjectSnapShotAtTime(float time) const;
 
-    virtual void updateBoundingBox();
-    virtual bool intersect(const Ray& ray, float& t0, float& t1) const;
-
-    bool               isActive() const;
-    const Vec3f&       getPosition() const;
-    const Material&    getMaterial() const;
-
-    const BoundingBox& getBoundingBox() const;
+    const Material& getMaterial() const;
 
     static void* operator new(size_t size);
     static void* operator new[](size_t size);
@@ -31,7 +51,4 @@ protected:
     KeyFramedValue<Vec3f> m_positionKeyFrames;
 
     const Material& m_material;
-
-    BoundingBox     m_boundingBox;
 };
-

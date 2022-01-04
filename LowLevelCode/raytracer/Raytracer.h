@@ -17,22 +17,20 @@ public:
 	void loadObjects(const std::string& sceneFilePath);
 	void removeAllObjects();
 
-	void updateAllObjects();
-
 	void run();
 
-	void renderFrame();
+	void renderFrameAtTime(float time);
 
-	Vec3f trace(const Ray& ray, int depth) const;
+	Vec3f trace(const Ray& ray, int depth, std::vector<ObjectSnapshot*>& objects) const;
+	Vec3f octreeTrace(const Ray& ray, int depth, Octree& octree) const;
 
 private:
-	unsigned int m_width = 1280;
-	unsigned int m_height = 720;
+	unsigned int m_width = 640;
+	unsigned int m_height = 480;
 
-	int m_currentFrame = 0;
 	int m_frameRate = 0;
 	int m_frameCount = 0;
-	int m_samplesPerPixel = 1;
+	int m_samplesPerPixel = 4;
 
 	bool m_useOctree = true;
 

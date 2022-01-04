@@ -12,11 +12,13 @@ public:
 	Octree();
 	~Octree();
 
-	void initialise(std::vector<Object*>& sceneObjects);
-	void rayTrace(const Vec3f& rayOrigin, const Vec3f& rayDirection, std::vector<Object*>& collidingObjects);
+	void initialise(std::vector<ObjectSnapshot*>& sceneObjects);
+	void rayTrace(const Ray& ray, float& t0, float& t1);
 
 	void clear();
 
 private:
 	OctreeNode* m_root;
+
+	std::vector<ObjectSnapshot*> m_potentialObjects;
 };

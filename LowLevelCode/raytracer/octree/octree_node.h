@@ -14,8 +14,8 @@ public:
 
 	bool initialise(const BoundingBox& boundingBox);
 
-	bool insertObject(Object* object, bool forceAdd = false);
-	void rayTrace(const Vec3f& rayOrigin, const Vec3f& rayDirection, std::vector<Object*>& collidingObjects);
+	bool insertObject(ObjectSnapshot* object, bool forceAdd = false);
+	void rayTrace(const Ray& ray, std::vector<ObjectSnapshot*>& collidingObjects);
 
 	bool isEmpty();
 
@@ -34,9 +34,9 @@ private:
 
 	// Reserved for objects that cannot fit into any children,
 	// or if no children exist once all objects have been added
-	std::vector<Object*>     m_confirmedPool;
+	std::vector<ObjectSnapshot*> m_confirmedPool;
 
 	// Filled with objects during tree construction
-	std::vector<Object*>     m_tempPool; 
+	std::vector<ObjectSnapshot*> m_tempPool;
 };
 

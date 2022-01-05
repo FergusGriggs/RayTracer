@@ -1,13 +1,15 @@
 #include "Object.h"
 
-#include "../../../LowLevelCode/HeapManager.h"
-#include "../GlobalAllocation.h"
+#include "../../heap_manager.h"
+#include "../../global_allocation.h"
 
-Object::Object(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material) :
+Object::Object(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material, bool octreeCompatible) :
     m_activeKeyFrames(activeKeyFrames),
     m_positionKeyFrames(positionKeyFrames),
 
-    m_material(material)
+    m_material(material),
+
+    m_octreeCompatible(octreeCompatible)
 {
 }
 
@@ -24,7 +26,7 @@ ObjectSnapshot* Object::generateObjectSnapShotAtTime(float time) const
 {
     if (m_activeKeyFrames.getValueAtTime(time))
     {
-        return new ObjectSnapshot(m_positionKeyFrames.getValueAtTime(time), m_material);
+        return new ObjectSnapshot(m_positionKeyFrames.getValueAtTime(time), m_material, m_octreeCompatible);
     }
 
     return nullptr;

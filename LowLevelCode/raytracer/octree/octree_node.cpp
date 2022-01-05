@@ -51,28 +51,6 @@ bool OctreeNode::insertObject(ObjectSnapshot* object, bool forceAdd)
 		{
 			this->createChildren();
 
-			// Empty temp pool into children
-			for (int j = 0; j < m_tempPool.size(); ++j)
-			{
-				bool placedInChild = false;
-				for (int i = 0; i < 8; ++i)
-				{
-					if (this->m_children[i]->insertObject(object))
-					{
-						placedInChild = true;
-						break;
-					}
-				}
-
-				if (!placedInChild)
-				{
-					m_tempPool.push_back(m_tempPool.at(j));
-				}
-			}
-
-			// Clear the temp pool now it's entities have been filtered out
-			m_tempPool.clear();
-
 			for (int i = 0; i < 8; ++i)
 			{
 				if (m_children[i]->insertObject(object))
@@ -120,9 +98,9 @@ void OctreeNode::rayTrace(const Ray& ray, std::vector<ObjectSnapshot*>& collidin
 {
 	Vec3f invDir = Vec3f(0.0f);
 
-	invDir.x = 1.0f / ray.m_origin.x;
-	invDir.y = 1.0f / ray.m_origin.y;
-	invDir.z = 1.0f / ray.m_origin.z;
+	invDir.x = 1.0f / ray.m_direction.x;
+	invDir.y = 1.0f / ray.m_direction.y;
+	invDir.z = 1.0f / ray.m_direction.z;
 
 	if (m_boundingBox.intersects(ray, invDir))
 	{
@@ -170,7 +148,7 @@ void OctreeNode::clear()
 	{
 		m_hasChildren = false;
 
-		for (int i = 0; i < 8; ++i)
+		for (int i = 0; i < m_children.size(); ++i)
 		{
 			m_children[i]->clear();
 
@@ -199,12 +177,33 @@ void OctreeNode::createChildren()
 				OctreeNode* newChild = m_children.back();
 
 				Vec3f min = m_boundingBox.m_minPoint + Vec3f((float)xSegment * halfSize.x, (float)ySegment * halfSize.y, (float)zSegment * halfSize.z);
-				Vec3f max = min + halfSize;
 
-				newChild->initialise(BoundingBox(min, max));
+				newChild->initialise(BoundingBox(min, halfSize));
 			}
 		}
 	}
 
 	m_hasChildren = true;
+
+	// Empty temp pool into children
+	for (int j = 0; j < m_tempPool.size(); ++j)
+	{
+		bool placedInChild = false;
+		for (int i = 0; i < 8; ++i)
+		{
+			if (m_children[i]->insertObject(m_tempPool[j]))
+			{
+				placedInChild = true;
+				break;
+			}
+		}
+
+		if (!placedInChild)
+		{
+			m_confirmedPool.push_back(m_tempPool[j]);
+		}
+	}
+
+	// Clear the temp pool now it's entities have been filtered out
+	m_tempPool.clear();
 }

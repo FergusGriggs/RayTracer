@@ -1,4 +1,4 @@
-#include "Material.h"
+#include "material.h"
 
 Material::Material() :
 	m_baseColour(Vec3f(0.0f)),
@@ -49,14 +49,14 @@ float Material::getMetallic() const
 	return m_metallic;
 }
 
-bool Material::scatter(const Ray& in, const Vec3f& hitPosition, const Vec3f& hitNormal, Vec3f& attenuation, Ray& scattered) const
+bool Material::scatter(const Ray& in, const TraceResult& traceResult, Vec3f& attenuation, Ray& scattered) const
 {
 	if (m_metallic > 0.0f)
 	{
-		Vec3f reflected = Vec3f::reflect(in.m_direction, hitNormal);
-		scattered = Ray(hitPosition, reflected);
+		Vec3f reflected = Vec3f::reflect(in.m_direction, traceResult.m_hitNormal);
+		scattered = Ray(traceResult.m_hitPoint, reflected);
 		attenuation = m_baseColour;
-		return Vec3f::dot(scattered.m_direction, hitNormal) > 0.0f;
+		return Vec3f::dot(scattered.m_direction, traceResult.m_hitNormal) > 0.0f;
 	}
 	else if (m_transmission > 0.0f)
 	{
@@ -64,10 +64,10 @@ bool Material::scatter(const Ray& in, const Vec3f& hitPosition, const Vec3f& hit
 	}
 	else
 	{
-		Vec3f target = hitPosition + hitNormal + Vec3f::randomDirection();
-		scattered = Ray(hitPosition, target - hitPosition);
+		Vec3f target = traceResult.m_hitPoint + traceResult.m_hitNormal + Vec3f::randomDirection();
+		scattered = Ray(traceResult.m_hitPoint, target - traceResult.m_hitPoint);
 		attenuation = m_baseColour;
-		return Vec3f::dot(scattered.m_direction, hitNormal) > 0.0f;
+		return Vec3f::dot(scattered.m_direction, traceResult.m_hitNormal) > 0.0f;
 	}
 
 	return false;

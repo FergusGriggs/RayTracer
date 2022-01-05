@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Object.h"
+#include "object.h"
 
-#include "../Vec3.h"
+#include "../vec3.h"
 
 struct SphereSnapshot : ObjectSnapshot
 {
 	
-    SphereSnapshot(const Vec3f& position, float radius, const Material& material) :
-        ObjectSnapshot(position, material),
+    SphereSnapshot(const Vec3f& position, float radius, const Material& material, bool octreeCompatible) :
+        ObjectSnapshot(position, material, octreeCompatible),
         m_radius(radius),
 		m_radiusSquared(radius * radius)
 
@@ -19,32 +19,40 @@ struct SphereSnapshot : ObjectSnapshot
     {
     }
 
-    virtual void createBoundingBox()
+    virtual void createBoundingBox() override
     {
 		m_boundingBox = BoundingBox::createFromSphere(m_position, m_radius);
     }
 
-    virtual bool intersect(const Ray& ray, float& t0, float& t1) const override
+    virtual void intersect(const Ray& ray, TraceResult& traceResult) const override
     {
 		Vec3f l = m_position - ray.m_origin;
 		float tca = l.dot(ray.m_direction);
+		
 		if (tca < 0.0f)
 		{
-			return false;
+			return;
 		}
 
 		float d2 = l.dot(l) - tca * tca;
 		if (d2 > m_radiusSquared)
 		{
-			return false;
+			return;
 		}
 
 		float thc = sqrt(m_radiusSquared - d2);
 
-		t0 = tca - thc;
-		t1 = tca + thc;
+		float frontHitDist = tca - thc;
+		float backHitDist = tca + thc;
 
-		return true;
+		// Inside the object, set the back hit as the front
+		if (frontHitDist < 0.0f) frontHitDist = backHitDist;
+		if (frontHitDist < traceResult.m_hitDistance)
+		{
+			traceResult.m_hitDistance = frontHitDist;
+			traceResult.m_object = this;
+			traceResult.m_hitOccured = true;
+		}
     }
 
     float m_radius;
@@ -54,7 +62,7 @@ struct SphereSnapshot : ObjectSnapshot
 class Sphere : public Object
 {
 public:
-	Sphere(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material, const KeyFramedValue<float>& radiusKeyFrames);
+	Sphere(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material, const KeyFramedValue<float>& radiusKeyFrames, bool octreeCompatible);
 
 	virtual ObjectSnapshot* generateObjectSnapShotAtTime(float time) const override;
 

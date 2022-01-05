@@ -1,16 +1,18 @@
 #pragma once
 
-#include "../Vec3.h"
-#include "../Material.h"
+#include "../vec3.h"
+#include "../material.h"
 
-#include "KeyFramedValue.h"
+#include "key_framed_value.h"
 #include "../bounding_box.h"
 
 struct ObjectSnapshot
 {
-    ObjectSnapshot(const Vec3f& position, const Material& material) :
+    ObjectSnapshot(const Vec3f& position, const Material& material, bool octreeCompatible) :
         m_position(position),
-        m_material(material)
+        m_material(material),
+
+        m_octreeCompatible(octreeCompatible)
     {
     }
 
@@ -22,21 +24,23 @@ struct ObjectSnapshot
     {
     }
 
-    virtual bool intersect(const Ray& ray, float& t0, float& t1) const
+    virtual void intersect(const Ray& ray, TraceResult& traceResult) const
     {
-        return false;
+        return;
     }
 
     Vec3f             m_position;
     const Material&   m_material;
 
     BoundingBox       m_boundingBox;
+
+    bool m_octreeCompatible;
 };
 
 class Object
 {
 public:
-    Object(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material);
+    Object(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material, bool octreeCompatible);
     virtual ~Object();
 
     virtual ObjectSnapshot* generateObjectSnapShotAtTime(float time) const;
@@ -51,4 +55,6 @@ protected:
     KeyFramedValue<Vec3f> m_positionKeyFrames;
 
     const Material& m_material;
+
+    bool m_octreeCompatible;
 };

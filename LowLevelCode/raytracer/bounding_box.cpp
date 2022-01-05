@@ -6,7 +6,9 @@ BoundingBox::BoundingBox() :
 {
 }
 
-BoundingBox::BoundingBox(const Vec3f& minPoint, const Vec3f& extents)
+BoundingBox::BoundingBox(const Vec3f& minPoint, const Vec3f& extents) :
+    m_minPoint(minPoint),
+    m_extents(extents)
 {
 }
 

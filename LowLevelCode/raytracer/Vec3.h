@@ -90,6 +90,15 @@ public:
 		return *this;
 	}
 
+	Vec3<T>& operator -= (const Vec3<T>& v)
+	{
+		x -= v.x;
+		y -= v.y;
+		z -= v.z;
+
+		return *this;
+	}
+
 	Vec3<T>& operator *= (const Vec3<T>& v)
 	{
 		x *= v.x;
@@ -238,6 +247,17 @@ public:
 		Vec3<float> randomInSphere = randomInUnitSphere();
 		randomInSphere.normalize();
 		return randomInSphere;
+	}
+
+	static Vec3<float> randomInBox(Vec3<float> min, Vec3<float> max)
+	{
+		Vec3<float> randomVec;
+
+		randomVec.x = static_functions::randomRange(min.x, max.x);
+		randomVec.y = static_functions::randomRange(min.y, max.y);
+		randomVec.z = static_functions::randomRange(min.z, max.z);
+
+		return randomVec;
 	}
 
 	/*Vec3<bool> operator Vec3<bool>:: || (const Vec3<bool>&v) const

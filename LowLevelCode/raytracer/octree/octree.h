@@ -5,6 +5,7 @@
 #include "octree_node.h"
 
 #include "../objects/Object.h"
+#include "../trace_result.h"
 
 class Octree
 {
@@ -13,12 +14,14 @@ public:
 	~Octree();
 
 	void initialise(std::vector<ObjectSnapshot*>& sceneObjects);
-	void rayTrace(const Ray& ray, float& t0, float& t1);
+	void rayTrace(const Ray& ray, TraceResult& traceResult);
 
 	void clear();
 
 private:
 	OctreeNode* m_root;
 
-	std::vector<ObjectSnapshot*> m_potentialObjects;
+	std::vector<ObjectSnapshot*> m_externalObjects;
+
+	std::vector<ObjectSnapshot*> m_traceObjects;
 };

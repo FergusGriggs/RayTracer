@@ -1,39 +1,39 @@
 {
 	"Scene": {
 		"MetaData": {
-			"frame_rate": 25,
-			"frame_count": 100
+			"animation_duration": 100.0,
+			"time_increase_per_frame": 0.3
 		},
 
 		"Materials": [
 			{
 				"id": "red",
-				"baseColour": [ 1.0, 0.0, 0.0 ],
-				"emissiveColour": [ 0.0, 0.0, 0.0 ],
+				"base_colour": [ 1.0, 0.0, 0.0 ],
+				"emissive_colour": [ 0.0, 0.0, 0.0 ],
 				"roughness": 0.7,
 				"metallic": 0.0,
 				"transmission": 0.0
 			},
 			{
 				"id": "green",
-				"baseColour": [ 0.0, 1.0, 0.0 ],
-				"emissiveColour": [ 0.0, 0.0, 0.0 ],
+				"base_colour": [ 0.0, 1.0, 0.0 ],
+				"emissive_colour": [ 0.0, 0.0, 0.0 ],
 				"roughness": 0.7,
 				"metallic": 0.0,
 				"transmission": 0.0
 			},
 			{
 				"id": "metal",
-				"baseColour": [ 0.8, 0.8, 0.8 ],
-				"emissiveColour": [ 0.0, 0.0, 0.0 ],
+				"base_colour": [ 0.8, 0.8, 0.8 ],
+				"emissive_colour": [ 0.0, 0.0, 0.0 ],
 				"roughness": 0.0,
 				"metallic": 1.0,
 				"transmission": 0.0
 			},
 			{
 				"id": "floor",
-				"baseColour": [ 1.0, 0.2, 0.2 ],
-				"emissiveColour": [ 0.0, 0.0, 0.0 ],
+				"base_colour": [ 1.0, 0.2, 0.2 ],
+				"emissive_colour": [ 0.0, 0.0, 0.0 ],
 				"roughness": 0.7,
 				"metallic": 0.0,
 				"transmission": 0.0
@@ -43,47 +43,27 @@
 		"Objects": [
 			{
 				"type": "Sphere",
-				"materialId": "red",
+				"material_id": "red",
 
 				"active_keyframes": [
 					{
+						"value": false,
+						"time": 0.0
+					},
+					{
 						"value": true,
-						"time": 0.0
+						"time": 10.0
 					}
 				],
 
 				"position_keyframes": [
 					{
-						"value": [ -20.0, 0.0, -25.0 ],
-						"time": 0.0
+						"value": [ 5.0, 20.0, -25.0 ],
+						"time": 10.0
 					},
 					{
-						"value": [ 0.0, 0.0, -25.0 ],
-						"time": 100.0,
-						"ease_in": "overshoot"
-					}
-				],
-
-				"radius_keyframes": [
-					{
-						"value": 2.0,
-						"time": 0.0
-					}
-				]
-			},
-
-			{
-				"type": "Sphere",
-				"materialId": "green",
-
-				"position_keyframes": [
-					{
-						"value": [ -20.0, 2.5, -25.0 ],
-						"time": 0.0
-					},
-					{
-						"value": [ 0.0, 2.5, -25.0 ],
-						"time": 100.0,
+						"value": [ 5.0, -2.0, -25.0 ],
+						"time": 80.0,
 						"ease_in": "bounce"
 					}
 				],
@@ -98,17 +78,28 @@
 
 			{
 				"type": "Sphere",
-				"materialId": "metal",
+				"material_id": "green",
 
-				"position_keyframes": [
+				"active_keyframes": [
 					{
-						"value": [ -20.0, -2.5, -25.0 ],
+						"value": false,
 						"time": 0.0
 					},
 					{
-						"value": [ 0.0, -2.5, -25.0 ],
-						"time": 100.0,
-						"ease_in": "elastic"
+						"value": true,
+						"time": 20.0
+					}
+				],
+
+				"position_keyframes": [
+					{
+						"value": [ -5.0, 20.0, -25.0 ],
+						"time": 20.0
+					},
+					{
+						"value": [ -5.0, -2.0, -25.0 ],
+						"time": 90.0,
+						"ease_in": "bounce"
 					}
 				],
 
@@ -122,7 +113,32 @@
 
 			{
 				"type": "Sphere",
-				"materialId": "floor",
+				"material_id": "metal",
+
+				"position_keyframes": [
+					{
+						"value": [ 0.0, 20.0, -25.0 ],
+						"time": 0.0
+					},
+					{
+						"value": [ 0.0, -2.0, -25.0 ],
+						"time": 70.0,
+						"ease_in": "bounce"
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 2.0,
+						"time": 0.0
+					}
+				]
+			},
+
+			{
+				"type": "Sphere",
+				"material_id": "floor",
+				"octree_compatible": false,
 
 				"active_keyframes": [
 					{

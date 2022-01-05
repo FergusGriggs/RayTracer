@@ -3,7 +3,7 @@
 #include <cmath>
 #include <unordered_map>
 
-#include "MathDefines.h"
+#include "math_defines.h"
 
 enum class EaseType
 {
@@ -17,7 +17,11 @@ enum class EaseType
 	eBounce
 };
 
-static const std::unordered_map<std::string, EaseType> sc_easeTypeStrings = {
+static EaseType getEaseTypeFromString(const std::string& str)
+{
+	EaseType retType = EaseType::eUnset;
+
+	std::unordered_map<std::string, EaseType> types{
 		{ "linear",    EaseType::eLinear },
 		{ "sine",      EaseType::eSine },
 		{ "quad",      EaseType::eQuad },
@@ -25,6 +29,15 @@ static const std::unordered_map<std::string, EaseType> sc_easeTypeStrings = {
 		{ "overshoot", EaseType::eOvershoot },
 		{ "elastic",   EaseType::eElastic },
 		{ "bounce",    EaseType::eBounce },
+	};
+
+	auto itr = types.find(str);
+	if (itr != types.end())
+	{
+		retType = itr->second;
+	}
+
+	return retType;
 };
 
 static float getValueEasedIn(float x, EaseType easeType)

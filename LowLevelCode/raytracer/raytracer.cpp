@@ -28,6 +28,11 @@
 #include <iostream>
 #include <cassert>
 
+#include <thread>
+#include <mutex>  
+
+#include <cstdio>
+
 // Windows only
 #include <algorithm>
 #include <sstream>
@@ -35,12 +40,15 @@
 
 #include "rapidjson/document.h"
 
-#include "objects/Sphere.h"
-#include "Raytracer.h"
-#include "MathDefines.h"
+#include "objects/sphere.h"
+#include "raytracer.h"
+#include "math_defines.h"
 
 #include "easings.h"
 #include "static_functions.h"
+#include "trace_result.h"
+#include "timer.h"
+
 
 //[comment]
 // This variable controls the maximum recursion depth
@@ -117,20 +125,12 @@ static void loadValueKeyFrames(KeyFramedValue<T>& valueKeyFrames, rapidjson::Val
 
 				if ((*keyFramesArrayItr).HasMember("ease_in"))
 				{
-					auto easeStringsItr = sc_easeTypeStrings.find((*keyFramesArrayItr)["ease_in"].GetString());
-					if (easeStringsItr != sc_easeTypeStrings.end())
-					{
-						easeIn = easeStringsItr->second;
-					}
+					easeIn = getEaseTypeFromString((*keyFramesArrayItr)["ease_in"].GetString());
 				}
 
 				if ((*keyFramesArrayItr).HasMember("ease_out"))
 				{
-					auto easeStringsItr = sc_easeTypeStrings.find((*keyFramesArrayItr)["ease_out"].GetString());
-					if (easeStringsItr != sc_easeTypeStrings.end())
-					{
-						easeOut = easeStringsItr->second;
-					}
+					easeOut = getEaseTypeFromString((*keyFramesArrayItr)["ease_out"].GetString());
 				}
 
 				valueKeyFrames.addKeyFrame(KeyFrame<T>(value, time, easeIn, easeOut));
@@ -146,7 +146,20 @@ Raytracer::Raytracer()
 
 	std::string filePath = "raytracer/scenes/test.json";
 	loadObjects(filePath);
-	run();
+
+	Timer animationTimer;
+	
+	if (m_usingThreading)
+	{
+		runMultithreaded();
+	}
+	else
+	{
+		run();
+	}
+
+	animationTimer.tock();
+	std::cout << "Finished Animation [Took " << static_cast<float>(animationTimer.duration().count()) * 0.000001f << "s]\n";
 }
 
 Raytracer::~Raytracer()
@@ -197,14 +210,15 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 		{
 			rapidjson::Value& sceneMetaData = sceneObject["MetaData"];
 
-			if (sceneMetaData.HasMember("frame_rate"))
+			if (sceneMetaData.HasMember("animation_duration"))
 			{
-				m_frameRate = sceneMetaData["frame_rate"].GetInt();
+				m_animationDuration = sceneMetaData["animation_duration"].GetFloat();
 			}
-			if (sceneMetaData.HasMember("frame_count"))
+			if (sceneMetaData.HasMember("time_increase_per_frame"))
 			{
-				m_frameCount = sceneMetaData["frame_count"].GetInt();
+				m_timeIncreasePerFrame = sceneMetaData["time_increase_per_frame"].GetFloat();
 			}
+			
 		}
 
 		if (sceneObject.HasMember("Materials"))
@@ -217,8 +231,8 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 				{
 					std::string materialId = (*materialItr)["id"].GetString();
 
-					Vec3f baseColour = getFloat3FromArray((*materialItr)["baseColour"].GetArray());
-					Vec3f emissiveColour = getFloat3FromArray((*materialItr)["emissiveColour"].GetArray());
+					Vec3f baseColour = getFloat3FromArray((*materialItr)["base_colour"].GetArray());
+					Vec3f emissiveColour = getFloat3FromArray((*materialItr)["emissive_colour"].GetArray());
 
 					float roughness = (*materialItr)["roughness"].GetFloat();
 					float metallic = (*materialItr)["metallic"].GetFloat();
@@ -239,8 +253,14 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 				for (auto objectItr = objects.Begin(); objectItr != objects.End(); ++objectItr)
 				{
 					std::string type = (*objectItr)["type"].GetString();
-					std::string materialId = (*objectItr)["materialId"].GetString();
+					std::string materialId = (*objectItr)["material_id"].GetString();
 
+					bool octreeCompatible = true;
+					if (objectItr->HasMember("octree_compatible"))
+					{
+						octreeCompatible = (*objectItr)["octree_compatible"].GetBool();
+					}
+					
 					KeyFramedValue<bool>  activeKeyFrames;
 					loadValueKeyFrames(activeKeyFrames, (*objectItr), "active_keyframes", true);
 
@@ -250,12 +270,14 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 					KeyFramedValue<float>  radiusKeyFrames;
 					loadValueKeyFrames(radiusKeyFrames, (*objectItr), "radius_keyframes", 1.0f);
 
-					Sphere* sphere = new Sphere(activeKeyFrames, positionKeyFrames, m_materials[materialId], radiusKeyFrames);
+					Sphere* sphere = new Sphere(activeKeyFrames, positionKeyFrames, m_materials[materialId], radiusKeyFrames, octreeCompatible);
 					m_objects.push_back(sphere);
 				}
 			}
 		}
 	}
+
+	addRandomFallingSpheres(500);
 }
 
 void Raytracer::removeAllObjects()
@@ -265,6 +287,67 @@ void Raytracer::removeAllObjects()
 		delete m_objects[i];
 	}
 	m_objects.clear();
+}
+
+void Raytracer::addRandomSpheres(int count)
+{
+	Vec3f minSpawnPos(-20.0f, -4.0f, -70.0f);
+	Vec3f maxSpawnPos(20.0f, 10.0f, -40.0f);
+
+	auto materialItr = m_materials.begin();
+	for (int sphereIndex = 0; sphereIndex < count; ++sphereIndex)
+	{
+		KeyFramedValue<bool> activeKeyFrames;
+		activeKeyFrames.addKeyFrame(KeyFrame<bool>(true, 0.0f));
+
+		KeyFramedValue<Vec3f> positionKeyFrames;
+		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(Vec3f::randomInBox(minSpawnPos, maxSpawnPos), 0.0f));
+		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(Vec3f::randomInBox(minSpawnPos, maxSpawnPos), 100.0f));
+
+		KeyFramedValue<float> radiusKeyFrames;
+		radiusKeyFrames.addKeyFrame(KeyFrame<float>(static_functions::randomRange(0.25f, 1.0f), 0.0f));
+
+		m_objects.push_back(new Sphere(activeKeyFrames, positionKeyFrames, materialItr->second, radiusKeyFrames, true));
+
+		if (++materialItr == m_materials.end())
+		{
+			materialItr = m_materials.begin();
+		}
+	}
+}
+
+void Raytracer::addRandomFallingSpheres(int count)
+{
+	Vec3f minSpawnPos(-20.0f, 40.0f, -70.0f);
+	Vec3f maxSpawnPos(20.0f, 40.0f, -30.0f);
+
+	auto materialItr = m_materials.begin();
+	for (int sphereIndex = 0; sphereIndex < count; ++sphereIndex)
+	{
+		float startTime = static_functions::randomRange(0.5f, 50.0f);
+
+		KeyFramedValue<bool> activeKeyFrames;
+		activeKeyFrames.addKeyFrame(KeyFrame<bool>(false, 0.0f));
+		activeKeyFrames.addKeyFrame(KeyFrame<bool>(true, startTime));
+
+		KeyFramedValue<float> radiusKeyFrames;
+		float radius = static_functions::randomRange(0.25f, 1.0f);
+		radiusKeyFrames.addKeyFrame(KeyFrame<float>(radius, 0.0f));
+
+		KeyFramedValue<Vec3f> positionKeyFrames;
+		Vec3f startPosition = Vec3f::randomInBox(minSpawnPos, maxSpawnPos);
+		Vec3f endPosition = Vec3f(startPosition.x, -4.0f + radius, startPosition.z);
+		
+		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(startPosition, startTime));
+		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(endPosition, startTime + 50.0, EaseType::eBounce, EaseType::eUnset));
+
+		m_objects.push_back(new Sphere(activeKeyFrames, positionKeyFrames, materialItr->second, radiusKeyFrames, true));
+
+		if (++materialItr == m_materials.end())
+		{
+			materialItr = m_materials.begin();
+		}
+	}
 }
 
 //[comment]
@@ -279,155 +362,91 @@ void Raytracer::removeAllObjects()
 //[/comment]
 Vec3f Raytracer::trace(const Ray &ray, int depth, std::vector<ObjectSnapshot*>& objects) const
 {
-	//if (raydir.length() != 1) std::cerr << "Error " << raydir << std::endl;
-	float tnear = INFINITY;
-	const ObjectSnapshot* object = nullptr;
-	// find intersection of this ray with the sphere in the scene
-	for (unsigned i = 0; i < objects.size(); ++i)
+	TraceResult traceResult;
+
+	// Find intersection of this ray with an object in the scene
+	for (int objectIndex = 0; objectIndex < objects.size(); ++objectIndex)
 	{
-		float t0 = INFINITY, t1 = INFINITY;
-		if (objects[i]->intersect(ray, t0, t1))
-		{
-			if (t0 < 0.00001f) t0 = t1;
-			if (t0 < tnear)
-			{
-				tnear = t0;
-				object = objects[i];
-			}
-		}
+		objects[objectIndex]->intersect(ray, traceResult);
 	}
 
 	// if there's no intersection return a sky gradient
-	if (object == nullptr)
+	if (!traceResult.m_hitOccured)
 	{
 		float t = 0.5f * (ray.m_direction.y + 1.0f);
 		return Vec3f(1.0f, 1.0f, 1.0f) * (1.0f - t) + Vec3f(0.5f, 0.7f, 1.0f) * t;
 	}
 
-	Vec3f intersectPoint = ray.m_origin + ray.m_direction * tnear; // point of intersection
-	Vec3f intersectNormal = intersectPoint - object->m_position; // normal at the intersection point
-	intersectNormal.normalize(); // normalize normal direction
-					             // If the normal and the view direction are not opposite to each other
-					             // reverse the normal direction. That also means we are inside the sphere so set
-					             // the inside bool to true. Finally reverse the sign of IdotN which we want
-					             // positive.
-	float bias = 1e-3f; // add some bias to the point from which we will be tracing
-	bool inside = false;
+	traceResult.m_hitPoint = ray.m_origin + ray.m_direction * traceResult.m_hitDistance;
+	traceResult.m_hitNormal = Vec3f::normalise(traceResult.m_hitPoint - traceResult.m_object->m_position);
 
-	if (ray.m_direction.dot(intersectNormal) > 0.0f)
+	// If the normal and the view direction are not opposite to each other
+	// reverse the normal direction. That also means we are inside the sphere so set
+	// the inside bool to true. Finally reverse the sign of IdotN which we want
+	// positive.
+
+	// Move the intersection away from the surface slightly to avoid self collision
+	float bias = 1e-3f;
+	traceResult.m_hitPoint += traceResult.m_hitNormal * bias;
+
+	// Flip the normal if we're inside the object
+	bool inside = false;
+	if (ray.m_direction.dot(traceResult.m_hitNormal) > 0.0f)
 	{
-		intersectNormal = -intersectNormal;
+		traceResult.m_hitNormal = -traceResult.m_hitNormal;
 		inside = true;
 	}
 
+	// Shade and scatter another ray
 	if (depth < MAX_RAY_DEPTH)
 	{
 		Ray scattered;
 		Vec3f attenuation;
-		if (object->m_material.scatter(ray, intersectPoint, intersectNormal, attenuation, scattered))
+		if (traceResult.m_object->m_material.scatter(ray, traceResult, attenuation, scattered))
 		{
 			return attenuation * trace(scattered, depth + 1, objects);
 		}
-
 	}
-	
+
 	return Vec3f(0.0f);
-
-	//if (objectMaterial.getTransparency() > 0.0f || objectMaterial.getReflectivity() > 0.0f && )
-	//{
-	//	float facingRatio = -rayDir.dot(nhit);
-	//	// change the mix value to tweak the effect
-	//	float fresnel = pow(fminf(1.0f, fmaxf(0.0f, 1.0f - facingRatio)), 5.0f);
-	//	// compute reflection direction (not need to normalize because all vectors
-	//	// are already normalized)
-	//	Vec3f reflDir = rayDir - nhit * 2.0f * rayDir.dot(nhit);
-	//	reflDir.normalize();
-	//	Vec3f reflection = trace(phit + nhit * bias, reflDir, depth + 1.0f);
-	//	
-	//	Vec3f refraction = objectMaterial.getBaseColour();
-	//	// if the sphere is also transparent compute refraction ray (transmission)
-	//	if (objectMaterial.getTransparency())
-	//	{
-	//		float ior = 1.1f, eta = (inside) ? ior : 1.0f / ior; // are we inside or outside the surface?
-	//		float cosi = -nhit.dot(rayDir);
-	//		float k = 1.0f - eta * eta * (1.0f - cosi * cosi);
-	//		Vec3f refrDir = rayDir * eta + nhit * (eta *  cosi - sqrt(k));
-	//		refrDir.normalize();
-	//		refraction = trace(phit - nhit * bias, refrDir, depth + 1.0f);
-	//	}
-	//	// the result is a mix of reflection and refraction (if the sphere is transparent)
-	//	surfaceColor = (reflection * fresnel + refraction * (1.0f - fresnel) * objectMaterial.getTransparency()) * objectMaterial.getBaseColour();
-	//}
-	//else
-	//{
-	//	// it's a diffuse object, only look for lights
-	//	for (unsigned i = 0; i < m_objects.size(); ++i)
-	//	{
-	//		if (m_objects[i]->isActive())
-	//		{
-	//			if (m_objects[i]->getMaterial().getEmissiveColour().x > 0.0f)
-	//			{
-	//				// this is a light
-	//				Vec3f transmission = 1;
-	//				Vec3f lightDirection = m_objects[i]->getPosition() - phit;
-	//				lightDirection.normalize();
-
-	//				for (unsigned j = 0; j < m_objects.size(); ++j)
-	//				{
-	//					if (i != j)
-	//					{
-	//						if (m_objects[j]->isActive())
-	//						{
-	//							float t0, t1;
-	//							if (m_objects[j]->intersect(phit + nhit * bias, lightDirection, t0, t1))
-	//							{
-	//								transmission = 0;
-	//								break;
-	//							}
-	//						}
-	//					}
-	//				}
-
-	//				surfaceColor += objectMaterial.getBaseColour() * transmission * std::max(float(0), nhit.dot(lightDirection)) * m_objects[i]->getMaterial().getEmissiveColour();
-	//			}
-	//		}
-	//	}
-	//}
-
-	//return surfaceColor + objectMaterial.getEmissiveColour();
 }
 
 Vec3f Raytracer::octreeTrace(const Ray& ray, int depth, Octree& octree) const
 {
-	ObjectSnapshot* objectSnapshot = nullptr;
-	Vec3f intersectPoint;
-	Vec3f intersectNormal;
+	TraceResult traceResult;
 
-	octree.rayTrace(ray, intersectPoint, intersectNormal, objectSnapshot);
+	octree.rayTrace(ray, traceResult);
 
 	// if there's no intersection return a sky gradient
-	if (objectSnapshot == nullptr)
+	if (!traceResult.m_hitOccured)
 	{
 		float t = 0.5f * (ray.m_direction.y + 1.0f);
 		return Vec3f(1.0f, 1.0f, 1.0f) * (1.0f - t) + Vec3f(0.5f, 0.7f, 1.0f) * t;
 	}
 
-	float bias = 1e-3f; // add some bias to the point from which we will be tracing
-	bool inside = false;
+	traceResult.m_hitPoint = ray.m_origin + ray.m_direction * traceResult.m_hitDistance;
+	traceResult.m_hitNormal = Vec3f::normalise(traceResult.m_hitPoint - traceResult.m_object->m_position);
 
-	if (ray.m_direction.dot(intersectNormal) > 0.0f)
+	// Move the intersection away from the surface slightly to avoid self collision
+	float bias = 1e-3f;
+	traceResult.m_hitPoint += traceResult.m_hitNormal * bias;
+
+	// Flip the normal if we're inside the object
+	bool inside = false;
+	if (ray.m_direction.dot(traceResult.m_hitNormal) > 0.0f)
 	{
-		intersectNormal = -intersectNormal;
+		traceResult.m_hitNormal = -traceResult.m_hitNormal;
 		inside = true;
 	}
 
+	// Shade and scatter another ray
 	if (depth < MAX_RAY_DEPTH)
 	{
 		Ray scattered;
 		Vec3f attenuation;
-		if (object->m_material.scatter(ray, intersectPoint, intersectNormal, attenuation, scattered))
+		if (traceResult.m_object->m_material.scatter(ray, traceResult, attenuation, scattered))
 		{
-			return attenuation * trace(scattered, depth + 1, objects);
+			return attenuation * octreeTrace(scattered, depth + 1, octree);
 		}
 	}
 
@@ -436,14 +455,72 @@ Vec3f Raytracer::octreeTrace(const Ray& ray, int depth, Octree& octree) const
 
 void Raytracer::run()
 {
-	m_imageBuffer = new Vec3f[m_width * m_height];
+	m_imageBuffer = new unsigned char[m_width * m_height * 3];
 
-	for (int i = 0; i < m_frameCount; ++i)
+	float nextFrameTime = 0.0f;
+	int frameNumber = 0;
+
+	while (nextFrameTime <= m_animationDuration)
 	{
-		renderFrameAtTime(static_cast<float>(i));
+		renderFrameAtTime(nextFrameTime, frameNumber++, m_imageBuffer);
+
+		nextFrameTime += m_timeIncreasePerFrame;
 	}
 
 	delete[] m_imageBuffer;
+}
+
+void Raytracer::runMultithreaded()
+{
+	std::vector<std::thread*> threads;
+	std::vector<unsigned char*> imageBuffers;
+
+	for (int i = 0; i < m_numThreads; ++i)
+	{
+		imageBuffers.push_back(new unsigned char[m_width * m_height * 3]);
+	}
+
+	bool done = false;
+	float nextFrameTime = 0.0f;
+	int frameNumber = 0;
+
+	while (!done)
+	{
+		m_outputMutex.lock();
+		std::cout << "Starting new thread batch\n";
+		m_outputMutex.unlock();
+
+		for (int i = 0; i < m_numThreads; ++i)
+		{
+			if (nextFrameTime <= m_animationDuration)
+			{
+				threads.push_back(new std::thread(&Raytracer::renderFrameAtTime, this, nextFrameTime, frameNumber++, imageBuffers[threads.size()]));
+				//threads.push_back(new std::thread(Raytracer::test, nextFrameTime));
+
+				nextFrameTime += m_timeIncreasePerFrame;
+			}
+			else
+			{
+				done = true;
+				break;
+			}
+		}
+
+		for (int threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
+		{
+			threads[threadIndex]->join();
+			delete threads[threadIndex];
+		}
+
+		threads.clear();
+	}
+
+	for (int i = 0; i < m_numThreads; ++i)
+	{
+		delete[] imageBuffers[i];
+	}
+
+	imageBuffers.clear();
 }
 
 
@@ -452,8 +529,10 @@ void Raytracer::run()
 // trace it and return a color. If the ray hits a sphere, we return the color of the
 // sphere at the intersection point, else we return the background color.
 //[/comment]
-void Raytracer::renderFrameAtTime(float time)
+void Raytracer::renderFrameAtTime(float time, int frameNumber, unsigned char* imageBuffer)
 {
+	Timer frameTimer;
+
 	std::vector<ObjectSnapshot*> allFrameObjects;
 	for (int objectIndex = 0; objectIndex < m_objects.size(); ++objectIndex)
 	{
@@ -471,8 +550,8 @@ void Raytracer::renderFrameAtTime(float time)
 	{
 		octree.initialise(allFrameObjects);
 	}
-	
-	Vec3f* pixel = m_imageBuffer;
+
+	unsigned char* pixel = imageBuffer;
 
 	float invWidth = 1.0f / float(m_width), invHeight = 1.0f / float(m_height);
 	float fov = 30.0f, aspectratio = m_width / float(m_height);
@@ -481,7 +560,7 @@ void Raytracer::renderFrameAtTime(float time)
 	// Trace rays
 	for (float y = 0.0f; y < m_height; ++y)
 	{
-		for (float x = 0.0f; x < m_width; ++x, ++pixel)
+		for (float x = 0.0f; x < m_width; ++x)
 		{
 			Vec3f pixelColour;
 
@@ -512,7 +591,9 @@ void Raytracer::renderFrameAtTime(float time)
 			pixelColour.y = sqrt(scale * pixelColour.y);
 			pixelColour.z = sqrt(scale * pixelColour.z);
 
-			*pixel = pixelColour;
+			*(pixel++) = pixelColour.x * 255.0f;
+			*(pixel++) = pixelColour.y * 255.0f;
+			*(pixel++) = pixelColour.z * 255.0f;
 		}
 	}
 
@@ -520,23 +601,45 @@ void Raytracer::renderFrameAtTime(float time)
 	{
 		delete allFrameObjects[objectIndex];
 	}
-
+	
 	// Save result to a PPM image (keep these flags if you compile under Windows)
 	std::stringstream ss;
-	ss << "raytracer/output/spheres" << static_cast<int>(time) << ".ppm";
+	ss << "raytracer/output/spheres" << frameNumber << ".ppm";
 
 	std::string tempString = ss.str();
 	char* filename = (char*)tempString.c_str();
 
-	std::ofstream ofs(filename, std::ios::out | std::ios::binary);
-	ofs << "P6\n" << m_width << " " << m_height << "\n255\n";
-	for (unsigned i = 0; i < m_width * m_height; ++i)
+	// Optional c-style writing to file
+	if (m_cStyleWrite)
 	{
-		ofs << (unsigned char)(std::min(1.0f, m_imageBuffer[i].x) * 255.0f) <<
-			(unsigned char)(std::min(1.0f, m_imageBuffer[i].y) * 255.0f) <<
-			(unsigned char)(std::min(1.0f, m_imageBuffer[i].z) * 255.0f);
-	}
-	ofs.close();
+		std::FILE* file;
+		fopen_s(&file, filename, "wb");
 
-	std::cout << "Rendered F" << static_cast<int>(time) << '\n';
+		if (file)
+		{
+			std::stringstream metaDataSS;
+			metaDataSS << "P6\n" << m_width << " " << m_height << "\n255\n";
+			std::string metaDataString = metaDataSS.str();
+
+			std::fwrite(metaDataString.c_str(), sizeof(unsigned char), metaDataString.size(), file);
+			std::fwrite(imageBuffer, sizeof(unsigned char), m_width * m_height * 3, file);
+			std::fclose(file);
+		}
+	}
+	else
+	{
+		std::ofstream ofs(filename, std::ios::out | std::ios::binary);
+		ofs << "P6\n" << m_width << " " << m_height << "\n255\n";
+		for (unsigned i = 0; i < m_width * m_height * 3; ++i)
+		{
+			ofs << imageBuffer[i];
+		}
+		ofs.close();
+	}
+
+	frameTimer.tock();
+
+	m_outputMutex.lock();
+	std::cout << "Rendered Frame " << frameNumber << " [Took " << static_cast<float>(frameTimer.duration().count()) * 0.000001f << "s] [" << (time / m_animationDuration) * 100.0f << "% Done]\n";
+	m_outputMutex.unlock();
 }

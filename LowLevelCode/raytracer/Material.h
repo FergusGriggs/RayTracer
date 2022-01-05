@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Vec3.h"
+#include "vec3.h"
 #include "ray.h"
+#include "trace_result.h"
 
 class Material
 {
@@ -17,7 +18,7 @@ public:
     float getRoughness() const;
     float getMetallic() const;
 
-    bool scatter(const Ray& in, const Vec3f& hitPosition, const Vec3f& hitNormal, Vec3f& attenuation, Ray& scattered) const;
+    bool scatter(const Ray& in, const TraceResult& traceResult, Vec3f& attenuation, Ray& scattered) const;
 
 private:
     Vec3f m_baseColour;

@@ -60,6 +60,9 @@
     <ClCompile Include="heap_types\physics_heap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="raytracer\camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="raytracer\objects\object.h">
@@ -137,5 +140,11 @@
     <ClInclude Include="raytracer\math_defines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="raytracer\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="raytracer\scenes\test.json" />
   </ItemGroup>
 </Project>

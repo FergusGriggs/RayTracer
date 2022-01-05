@@ -66,6 +66,11 @@ public:
 		return Vec3<T>(x * scalar, y * scalar, z * scalar);
 	}
 
+	Vec3<T> operator/ (const T& scalar) const
+	{
+		return Vec3<T>(x / scalar, y / scalar, z / scalar);
+	}
+
 	Vec3<T> operator* (const Vec3<T>& vec) const
 	{
 		return Vec3<T>(x * vec.x, y * vec.y, z * vec.z);
@@ -168,6 +173,13 @@ public:
 		return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
 	}
 
+	static Vec3<T> cross(const Vec3<T>& vec1, const Vec3<T>& vec2)
+	{
+		return Vec3<T>(vec1.y * vec2.z - vec1.z * vec2.y,
+			vec1.z * vec2.x - vec1.x * vec2.z,
+			vec1.x * vec2.y - vec1.y * vec2.x);
+	}
+
 	static Vec3<T> normalise(const Vec3<float>& vec)
 	{
 		T lengthSquared = vec.length2();
@@ -184,6 +196,19 @@ public:
 	static Vec3<float> reflect(const Vec3<float>& incident, const Vec3<float>& normal)
 	{
 		return incident - normal * 2.0f * Vec3<float>::dot(normal, incident);
+	}
+
+	static Vec3<float> refract(const Vec3<float>& incident, const Vec3<float>& normal, float etai_over_etat)
+	{
+		float k = 1.0f - etai_over_etat * etai_over_etat * (1.0f - Vec3<float>::dot(normal, incident) * Vec3<float>::dot(normal, incident));
+		if (k < 0.0f)
+		{
+			return Vec3<float>(0.0f);
+		}
+		else
+		{
+			return incident * etai_over_etat - normal * (etai_over_etat * Vec3<float>::dot(normal, incident) + sqrt(k));
+		}
 	}
 
 	static Vec3<T> min(const Vec3<T>& vec1, const Vec3<T>& vec2)
@@ -234,6 +259,19 @@ public:
 		while (true)
 		{
 			Vec3<float> point = Vec3<float>::randomNegativeOneToOne();
+			if (point.length2() >= 1.0f)
+			{
+				continue;
+			}
+			return point;
+		}
+	}
+
+	static Vec3<float> randomInUnitDisk()
+	{
+		while (true)
+		{
+			Vec3<float> point = Vec3<float>(static_functions::randomNegativeOneToOne(), static_functions::randomNegativeOneToOne(), 0.0f);
 			if (point.length2() >= 1.0f)
 			{
 				continue;

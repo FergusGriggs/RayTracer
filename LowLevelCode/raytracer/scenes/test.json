@@ -2,48 +2,50 @@
 	"Scene": {
 		"MetaData": {
 			"animation_duration": 100.0,
-			"time_increase_per_frame": 0.3
+			"time_increase_per_frame": 0.782
 		},
 
 		"Materials": [
 			{
-				"id": "red",
-				"base_colour": [ 1.0, 0.0, 0.0 ],
-				"emissive_colour": [ 0.0, 0.0, 0.0 ],
-				"roughness": 0.7,
-				"metallic": 0.0,
-				"transmission": 0.0
-			},
-			{
-				"id": "green",
-				"base_colour": [ 0.0, 1.0, 0.0 ],
-				"emissive_colour": [ 0.0, 0.0, 0.0 ],
-				"roughness": 0.7,
-				"metallic": 0.0,
-				"transmission": 0.0
+				"id": "glass",
+				"base_colour": [ 1.0, 1.0, 1.0 ],
+				"roughness": 0.1,
+				"transmission": 1.0,
+				"IOR": 1.52
 			},
 			{
 				"id": "metal",
 				"base_colour": [ 0.8, 0.8, 0.8 ],
-				"emissive_colour": [ 0.0, 0.0, 0.0 ],
-				"roughness": 0.0,
-				"metallic": 1.0,
-				"transmission": 0.0
+				"metallic": 1.0
 			},
 			{
-				"id": "floor",
-				"base_colour": [ 1.0, 0.2, 0.2 ],
-				"emissive_colour": [ 0.0, 0.0, 0.0 ],
-				"roughness": 0.7,
-				"metallic": 0.0,
-				"transmission": 0.0
+				"id": "gold_metal",
+				"base_colour": [ 0.8, 0.6, 0.2 ],
+				"roughness": 0.05,
+				"metallic": 1.0
+			},
+			{
+				"id": "yellow",
+				"base_colour": [ 0.8, 0.6, 0.2 ]
+			},
+			{
+				"id": "green",
+				"base_colour": [ 0.2, 0.8, 0.2 ]
+			},
+			{
+				"id": "red",
+				"base_colour": [ 1.0, 0.2, 0.2 ]
+			},
+			{
+				"id": "blue",
+				"base_colour": [ 0.2, 0.2, 0.8 ]
 			}
 		],
 
 		"Objects": [
 			{
 				"type": "Sphere",
-				"material_id": "red",
+				"material_id": "metal",
 
 				"active_keyframes": [
 					{
@@ -78,7 +80,7 @@
 
 			{
 				"type": "Sphere",
-				"material_id": "green",
+				"material_id": "glass",
 
 				"active_keyframes": [
 					{
@@ -113,7 +115,7 @@
 
 			{
 				"type": "Sphere",
-				"material_id": "metal",
+				"material_id": "red",
 
 				"position_keyframes": [
 					{
@@ -137,7 +139,7 @@
 
 			{
 				"type": "Sphere",
-				"material_id": "floor",
+				"material_id": "gold_metal",
 				"octree_compatible": false,
 
 				"active_keyframes": [
@@ -149,14 +151,14 @@
 
 				"position_keyframes": [
 					{
-						"value": [ 0.0, -10004.0, 0.0 ],
+						"value": [ 0.0, -100003.95, 0.0 ],
 						"time": 0.0
 					}
 				],
 
 				"radius_keyframes": [
 					{
-						"value": 10000.0,
+						"value": 100000.0,
 						"time": 0.0
 					}
 				]

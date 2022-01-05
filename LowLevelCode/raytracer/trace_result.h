@@ -12,7 +12,8 @@ struct TraceResult
         m_hitPoint(0.0f),
         m_hitNormal(0.0f, 1.0f, 0.0f),
         m_object(nullptr),
-        m_hitDistance(INFINITY)
+        m_hitDistance(INFINITY),
+        m_inside(false)
     {
     }
 
@@ -21,4 +22,5 @@ struct TraceResult
     Vec3f                 m_hitNormal;
     const ObjectSnapshot* m_object;
     float                 m_hitDistance;
+    bool                  m_inside;
 };

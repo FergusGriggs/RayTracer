@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="raytracer\camera.cpp" />
     <ClCompile Include="global_allocation.cpp" />
     <ClCompile Include="heap_manager.cpp" />
     <ClCompile Include="heap_types\audio_heap.cpp" />
@@ -172,6 +173,7 @@
     <ClCompile Include="raytracer\raytracer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="raytracer\camera.h" />
     <ClInclude Include="global_allocation.h" />
     <ClInclude Include="header_footer.h" />
     <ClInclude Include="heap_manager.h" />
@@ -196,6 +198,9 @@
     <ClInclude Include="raytracer\timer.h" />
     <ClInclude Include="raytracer\trace_result.h" />
     <ClInclude Include="raytracer\vec3.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="raytracer\scenes\test.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

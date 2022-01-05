@@ -15,7 +15,7 @@ public:
 	bool initialise(const BoundingBox& boundingBox);
 
 	bool insertObject(ObjectSnapshot* object, bool forceAdd = false);
-	void rayTrace(const Ray& ray, std::vector<ObjectSnapshot*>& collidingObjects);
+	void rayTrace(const Ray& ray, std::vector<ObjectSnapshot*>& possibleColliders);
 
 	bool isEmpty();
 

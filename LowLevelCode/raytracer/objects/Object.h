@@ -6,6 +6,8 @@
 #include "key_framed_value.h"
 #include "../bounding_box.h"
 
+#include "../../global_allocation.h"
+
 struct ObjectSnapshot
 {
     ObjectSnapshot(const Vec3f& position, const Material& material, bool octreeCompatible) :
@@ -27,6 +29,16 @@ struct ObjectSnapshot
     virtual void intersect(const Ray& ray, TraceResult& traceResult) const
     {
         return;
+    }
+
+    static void* operator new(size_t size)
+    {
+        return ::operator new(size, HeapManager::it().getHeapPtr(ManagedHeap::Type::eGraphics));
+    }
+
+    static void* operator new[](size_t size)
+    {
+        return ::operator new[](size, HeapManager::it().getHeapPtr(ManagedHeap::Type::eGraphics));
     }
 
     Vec3f             m_position;

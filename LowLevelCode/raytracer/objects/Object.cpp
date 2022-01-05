@@ -1,7 +1,6 @@
 #include "Object.h"
 
 #include "../../heap_manager.h"
-#include "../../global_allocation.h"
 
 Object::Object(const KeyFramedValue<bool>& activeKeyFrames, const KeyFramedValue<Vec3f>& positionKeyFrames, const Material& material, bool octreeCompatible) :
     m_activeKeyFrames(activeKeyFrames),

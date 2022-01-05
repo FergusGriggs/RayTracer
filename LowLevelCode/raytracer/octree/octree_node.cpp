@@ -94,7 +94,7 @@ void OctreeNode::cullEmptyChildrenAndFilterTempPools()
 	m_processed = true;
 }
 
-void OctreeNode::rayTrace(const Ray& ray, std::vector<ObjectSnapshot*>& collidingObjects)
+void OctreeNode::rayTrace(const Ray& ray, std::vector<ObjectSnapshot*>& possibleColliders)
 {
 	Vec3f invDir = Vec3f(0.0f);
 
@@ -106,17 +106,14 @@ void OctreeNode::rayTrace(const Ray& ray, std::vector<ObjectSnapshot*>& collidin
 	{
 		for (int i = 0; i < m_confirmedPool.size(); ++i)
 		{
-			if (m_confirmedPool[i]->m_boundingBox.intersects(ray, invDir))
-			{
-				collidingObjects.push_back(m_confirmedPool[i]);
-			}
+			possibleColliders.push_back(m_confirmedPool[i]);
 		}
 
 		if (m_hasChildren)
 		{
 			for (int i = 0; i < m_children.size(); ++i)
 			{
-				m_children[i]->rayTrace(ray, collidingObjects);
+				m_children[i]->rayTrace(ray, possibleColliders);
 			}
 		}
 	}

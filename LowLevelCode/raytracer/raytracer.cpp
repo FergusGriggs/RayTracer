@@ -48,12 +48,12 @@
 #include "static_functions.h"
 #include "trace_result.h"
 #include "timer.h"
+#include "../heap_manager.h"
 
 
 //[comment]
 // This variable controls the maximum recursion depth
 //[/comment]
-#define MAX_RAY_DEPTH 2
 
 static float mix(float a, float b, float mix)
 {
@@ -149,7 +149,7 @@ Raytracer::Raytracer()
 
 	Timer animationTimer;
 	
-	if (m_usingThreading)
+	if (m_threadedMode != ThreadedMode::eDisabled)
 	{
 		runMultithreaded();
 	}
@@ -159,7 +159,9 @@ Raytracer::Raytracer()
 	}
 
 	animationTimer.tock();
-	std::cout << "Finished Animation [Took " << static_cast<float>(animationTimer.duration().count()) * 0.000001f << "s]\n";
+	m_animationRenderTime = static_cast<float>(animationTimer.duration().count()) * 0.000001f;
+	
+	printRenderStats();
 }
 
 Raytracer::~Raytracer()
@@ -231,14 +233,43 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 				{
 					std::string materialId = (*materialItr)["id"].GetString();
 
-					Vec3f baseColour = getFloat3FromArray((*materialItr)["base_colour"].GetArray());
-					Vec3f emissiveColour = getFloat3FromArray((*materialItr)["emissive_colour"].GetArray());
+					Vec3f baseColour = Vec3f(1.0f);
+					if (materialItr->HasMember("base_colour"))
+					{
+						baseColour = getFloat3FromArray((*materialItr)["base_colour"].GetArray());
+					}
+					
+					Vec3f emissiveColour = Vec3f(0.0f);
+					if (materialItr->HasMember("emissive_colour"))
+					{
+						emissiveColour = getFloat3FromArray((*materialItr)["emissive_colour"].GetArray());
+					}
 
-					float roughness = (*materialItr)["roughness"].GetFloat();
-					float metallic = (*materialItr)["metallic"].GetFloat();
-					float transmission = (*materialItr)["transmission"].GetFloat();
+					float roughness = 0.0f;
+					if (materialItr->HasMember("roughness"))
+					{
+						roughness = (*materialItr)["roughness"].GetFloat();
+					}
 
-					Material material(baseColour, roughness, metallic, transmission, emissiveColour);
+					float metallic = 0.0f;
+					if (materialItr->HasMember("metallic"))
+					{
+						metallic = (*materialItr)["metallic"].GetFloat();
+					}
+
+					float transmission = 0.0f;
+					if (materialItr->HasMember("transmission"))
+					{
+						transmission = (*materialItr)["transmission"].GetFloat();
+					}
+
+					float IOR = 1.52f;
+					if (materialItr->HasMember("IOR"))
+					{
+						IOR = (*materialItr)["IOR"].GetFloat();
+					}
+
+					Material material(baseColour, roughness, metallic, transmission, IOR, emissiveColour);
 					m_materials.insert({ materialId , material});
 				}
 			}
@@ -277,7 +308,16 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 		}
 	}
 
-	addRandomFallingSpheres(500);
+	Vec3f backMin(-30.0f, 30.0f, -412.0f);
+	Vec3f backMax(30.0f, 50.0f, -30.0f);
+	BoundingBox backSpawnBox(backMin, backMax - backMin);
+
+	Vec3f frontMin(-7.0f, 30.0f, -20.0f);
+	Vec3f frontMax(7.0f, 50.0f, 20.0f);
+	BoundingBox frontSpawnBox(frontMin, frontMax - frontMin);
+	
+	addRandomFallingSpheres(490, backSpawnBox);
+	addRandomFallingSpheres(6, frontSpawnBox);
 }
 
 void Raytracer::removeAllObjects()
@@ -289,11 +329,8 @@ void Raytracer::removeAllObjects()
 	m_objects.clear();
 }
 
-void Raytracer::addRandomSpheres(int count)
+void Raytracer::addRandomSpheres(int count, const BoundingBox& spawnBox)
 {
-	Vec3f minSpawnPos(-20.0f, -4.0f, -70.0f);
-	Vec3f maxSpawnPos(20.0f, 10.0f, -40.0f);
-
 	auto materialItr = m_materials.begin();
 	for (int sphereIndex = 0; sphereIndex < count; ++sphereIndex)
 	{
@@ -301,8 +338,8 @@ void Raytracer::addRandomSpheres(int count)
 		activeKeyFrames.addKeyFrame(KeyFrame<bool>(true, 0.0f));
 
 		KeyFramedValue<Vec3f> positionKeyFrames;
-		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(Vec3f::randomInBox(minSpawnPos, maxSpawnPos), 0.0f));
-		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(Vec3f::randomInBox(minSpawnPos, maxSpawnPos), 100.0f));
+		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(Vec3f::randomInBox(spawnBox.m_minPoint, spawnBox.m_minPoint + spawnBox.m_extents), 0.0f));
+		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(Vec3f::randomInBox(spawnBox.m_minPoint, spawnBox.m_minPoint + spawnBox.m_extents), 100.0f));
 
 		KeyFramedValue<float> radiusKeyFrames;
 		radiusKeyFrames.addKeyFrame(KeyFrame<float>(static_functions::randomRange(0.25f, 1.0f), 0.0f));
@@ -316,11 +353,8 @@ void Raytracer::addRandomSpheres(int count)
 	}
 }
 
-void Raytracer::addRandomFallingSpheres(int count)
+void Raytracer::addRandomFallingSpheres(int count, const BoundingBox& spawnBox)
 {
-	Vec3f minSpawnPos(-20.0f, 40.0f, -70.0f);
-	Vec3f maxSpawnPos(20.0f, 40.0f, -30.0f);
-
 	auto materialItr = m_materials.begin();
 	for (int sphereIndex = 0; sphereIndex < count; ++sphereIndex)
 	{
@@ -335,7 +369,7 @@ void Raytracer::addRandomFallingSpheres(int count)
 		radiusKeyFrames.addKeyFrame(KeyFrame<float>(radius, 0.0f));
 
 		KeyFramedValue<Vec3f> positionKeyFrames;
-		Vec3f startPosition = Vec3f::randomInBox(minSpawnPos, maxSpawnPos);
+		Vec3f startPosition = Vec3f::randomInBox(spawnBox.m_minPoint, spawnBox.m_minPoint + spawnBox.m_extents);
 		Vec3f endPosition = Vec3f(startPosition.x, -4.0f + radius, startPosition.z);
 		
 		positionKeyFrames.addKeyFrame(KeyFrame<Vec3f>(startPosition, startTime));
@@ -385,20 +419,16 @@ Vec3f Raytracer::trace(const Ray &ray, int depth, std::vector<ObjectSnapshot*>& 
 	// the inside bool to true. Finally reverse the sign of IdotN which we want
 	// positive.
 
-	// Move the intersection away from the surface slightly to avoid self collision
-	float bias = 1e-3f;
-	traceResult.m_hitPoint += traceResult.m_hitNormal * bias;
-
 	// Flip the normal if we're inside the object
-	bool inside = false;
+	traceResult.m_inside = false;
 	if (ray.m_direction.dot(traceResult.m_hitNormal) > 0.0f)
 	{
 		traceResult.m_hitNormal = -traceResult.m_hitNormal;
-		inside = true;
+		traceResult.m_inside = true;
 	}
 
 	// Shade and scatter another ray
-	if (depth < MAX_RAY_DEPTH)
+	if (depth < m_maxBounces)
 	{
 		Ray scattered;
 		Vec3f attenuation;
@@ -420,27 +450,28 @@ Vec3f Raytracer::octreeTrace(const Ray& ray, int depth, Octree& octree) const
 	// if there's no intersection return a sky gradient
 	if (!traceResult.m_hitOccured)
 	{
-		float t = 0.5f * (ray.m_direction.y + 1.0f);
-		return Vec3f(1.0f, 1.0f, 1.0f) * (1.0f - t) + Vec3f(0.5f, 0.7f, 1.0f) * t;
+		//static Vec3f skyColour = Vec3f(0.5f, 0.7f, 1.0f);
+		static Vec3f white = Vec3f(1.0f, 1.0f, 1.0f);
+		static Vec3f skyColour = Vec3f(0.447f, 0.761f, 0.89f);
+		static Vec3f sunsetRed = Vec3f(1.0f, 0.4f, 0.0f);
+
+		float t = 1.0f - powf(1.0f - fmaxf(0.0f, ray.m_direction.y), 7.0f);
+		return white * (1.0f - t) + skyColour * t;
 	}
 
 	traceResult.m_hitPoint = ray.m_origin + ray.m_direction * traceResult.m_hitDistance;
 	traceResult.m_hitNormal = Vec3f::normalise(traceResult.m_hitPoint - traceResult.m_object->m_position);
 
-	// Move the intersection away from the surface slightly to avoid self collision
-	float bias = 1e-3f;
-	traceResult.m_hitPoint += traceResult.m_hitNormal * bias;
-
 	// Flip the normal if we're inside the object
-	bool inside = false;
+	traceResult.m_inside = false;
 	if (ray.m_direction.dot(traceResult.m_hitNormal) > 0.0f)
 	{
 		traceResult.m_hitNormal = -traceResult.m_hitNormal;
-		inside = true;
+		traceResult.m_inside = true;
 	}
 
 	// Shade and scatter another ray
-	if (depth < MAX_RAY_DEPTH)
+	if (depth < m_maxBounces)
 	{
 		Ray scattered;
 		Vec3f attenuation;
@@ -457,14 +488,14 @@ void Raytracer::run()
 {
 	m_imageBuffer = new unsigned char[m_width * m_height * 3];
 
-	float nextFrameTime = 0.0f;
-	int frameNumber = 0;
+	m_nextFrame = 0;
+	m_nextFrameTime = 0.0f;
 
-	while (nextFrameTime <= m_animationDuration)
+	while (m_nextFrameTime <= m_animationDuration)
 	{
-		renderFrameAtTime(nextFrameTime, frameNumber++, m_imageBuffer);
+		renderFrameAtTime(m_nextFrameTime, m_nextFrame++, 0, m_imageBuffer);
 
-		nextFrameTime += m_timeIncreasePerFrame;
+		m_nextFrameTime += m_timeIncreasePerFrame;
 	}
 
 	delete[] m_imageBuffer;
@@ -472,54 +503,73 @@ void Raytracer::run()
 
 void Raytracer::runMultithreaded()
 {
+	m_nextFrame = 0;
+	m_nextFrameTime = 0.0f;
+
 	std::vector<std::thread*> threads;
 	std::vector<unsigned char*> imageBuffers;
 
+	// Create thread image buffers
 	for (int i = 0; i < m_numThreads; ++i)
 	{
 		imageBuffers.push_back(new unsigned char[m_width * m_height * 3]);
 	}
 
-	bool done = false;
-	float nextFrameTime = 0.0f;
-	int frameNumber = 0;
-
-	while (!done)
+	if (m_threadedMode == ThreadedMode::eContinual)
 	{
-		m_outputMutex.lock();
-		std::cout << "Starting new thread batch\n";
-		m_outputMutex.unlock();
-
 		for (int i = 0; i < m_numThreads; ++i)
 		{
-			if (nextFrameTime <= m_animationDuration)
-			{
-				threads.push_back(new std::thread(&Raytracer::renderFrameAtTime, this, nextFrameTime, frameNumber++, imageBuffers[threads.size()]));
-				//threads.push_back(new std::thread(Raytracer::test, nextFrameTime));
-
-				nextFrameTime += m_timeIncreasePerFrame;
-			}
-			else
-			{
-				done = true;
-				break;
-			}
+			threads.push_back(new std::thread(&Raytracer::continualThreadLoop, this, i, imageBuffers[threads.size()]));
 		}
 
+		// Wait for all threads to finish
 		for (int threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
 		{
 			threads[threadIndex]->join();
 			delete threads[threadIndex];
 		}
+	}
+	else if (m_threadedMode == ThreadedMode::eBatched)
+	{
+		bool done = false;
 
-		threads.clear();
+		while (!done)
+		{
+			m_outputMutex.lock();
+			std::cout << "Starting new thread batch [" << (m_nextFrameTime / m_animationDuration) * 100.0f << " % Done] [Graphics Heap Allocated Bytes:" << HeapManager::it().getHeapPtr(ManagedHeap::Type::eGraphics)->getBytesAllocated() << "]\n";
+			m_outputMutex.unlock();
+
+			for (int i = 0; i < m_numThreads; ++i)
+			{
+				if (m_nextFrameTime <= m_animationDuration)
+				{
+					threads.push_back(new std::thread(&Raytracer::renderFrameAtTime, this, m_nextFrameTime, m_nextFrame++, i, imageBuffers[threads.size()]));
+
+					m_nextFrameTime += m_timeIncreasePerFrame;
+				}
+				else
+				{
+					done = true;
+					break;
+				}
+			}
+
+			// Wait for all threads in the batch to finish
+			for (int threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
+			{
+				threads[threadIndex]->join();
+				delete threads[threadIndex];
+			}
+
+			threads.clear();
+		}
 	}
 
+	// Delete thread image buffers
 	for (int i = 0; i < m_numThreads; ++i)
 	{
 		delete[] imageBuffers[i];
 	}
-
 	imageBuffers.clear();
 }
 
@@ -529,7 +579,7 @@ void Raytracer::runMultithreaded()
 // trace it and return a color. If the ray hits a sphere, we return the color of the
 // sphere at the intersection point, else we return the background color.
 //[/comment]
-void Raytracer::renderFrameAtTime(float time, int frameNumber, unsigned char* imageBuffer)
+void Raytracer::renderFrameAtTime(float time, int frameNumber, int threadID, unsigned char* imageBuffer)
 {
 	Timer frameTimer;
 
@@ -554,8 +604,6 @@ void Raytracer::renderFrameAtTime(float time, int frameNumber, unsigned char* im
 	unsigned char* pixel = imageBuffer;
 
 	float invWidth = 1.0f / float(m_width), invHeight = 1.0f / float(m_height);
-	float fov = 30.0f, aspectratio = m_width / float(m_height);
-	float angle = tan(M_PI * 0.5f * fov / 180.f);
 
 	// Trace rays
 	for (float y = 0.0f; y < m_height; ++y)
@@ -566,15 +614,10 @@ void Raytracer::renderFrameAtTime(float time, int frameNumber, unsigned char* im
 
 			for (int sampleIndex = 0; sampleIndex < m_samplesPerPixel; ++sampleIndex)
 			{
-				float u = x + static_functions::randomNegativeOneToOne() * 0.5f;
-				float v = y + static_functions::randomNegativeOneToOne() * 0.5f;
+				float u = (x + static_functions::randomNegativeOneToOne() * 0.5f) * invWidth;
+				float v = (y + static_functions::randomNegativeOneToOne() * 0.5f) * invHeight;
 
-				float xx = (2.0f * ((u + 0.5f) * invWidth) - 1.0f) * angle * aspectratio;
-				float yy = (1.0f - 2.0f * ((v + 0.5f) * invHeight)) * angle;
-				Vec3f raydir(xx, yy, -1.0f);
-				raydir.normalize();
-
-				Ray ray(Vec3f(0.0f), raydir);
+				Ray ray = m_camera.getRay(u, v);
 
 				if (m_useOctree)
 				{
@@ -639,7 +682,77 @@ void Raytracer::renderFrameAtTime(float time, int frameNumber, unsigned char* im
 
 	frameTimer.tock();
 
+	float timeToComplete = static_cast<float>(frameTimer.duration().count()) * 0.000001f;
 	m_outputMutex.lock();
-	std::cout << "Rendered Frame " << frameNumber << " [Took " << static_cast<float>(frameTimer.duration().count()) * 0.000001f << "s] [" << (time / m_animationDuration) * 100.0f << "% Done]\n";
+	std::cout << "Rendered Frame " << frameNumber << " [Thread ID " << threadID << "] [Took " << timeToComplete << "s]\n";
 	m_outputMutex.unlock();
+
+	addFrameStats(timeToComplete);
+}
+
+void Raytracer::continualThreadLoop(int threadID, unsigned char* imageBuffer)
+{
+	float frameTime;
+	int frameNumber;
+	getNextFrameAndTime(frameNumber, frameTime);
+	while (frameTime >= 0.0f)
+	{
+		renderFrameAtTime(frameTime, frameNumber, threadID, imageBuffer);
+
+		getNextFrameAndTime(frameNumber, frameTime);
+	}
+}
+
+void Raytracer::getNextFrameAndTime(int& frame, float& time)
+{
+	m_nextThreadTimeMutex.lock();
+	// We have reached the end of the animation, return -1.0f
+	// to let the thread know it should terminate
+	if (m_nextFrameTime > m_animationDuration)
+	{
+		m_nextThreadTimeMutex.unlock();
+		time = -1.0f;
+		return;
+	}
+
+	// Otherwise, grab the current values and increment them while in lock
+	time = m_nextFrameTime;
+	m_nextFrameTime += m_timeIncreasePerFrame;
+
+	frame = m_nextFrame++;
+	m_nextThreadTimeMutex.unlock();
+
+	return;
+}
+
+void Raytracer::addFrameStats(float timeToComplete)
+{
+	m_threadStatsMutex.lock();
+
+	m_fastestFrameTime = fminf(m_fastestFrameTime, timeToComplete);
+	m_slowestFrameTime = fmaxf(m_slowestFrameTime, timeToComplete);
+	m_totalFrameTimes += timeToComplete;
+
+	m_threadStatsMutex.unlock();
+}
+
+void Raytracer::printRenderStats() const
+{
+	std::cout << "\nFinished Animation [Took " << m_animationRenderTime << "s]\n\n";
+
+	// 0 indexed so next frame is the number rendered
+	std::cout << "Frames Rendered: " << m_nextFrame << "\n";
+	std::cout << "Slowest: " << m_slowestFrameTime << " seconds\n";
+	std::cout << "Fastest: " << m_fastestFrameTime << " seconds\n";
+	std::cout << "Average: " << m_totalFrameTimes / (float)(m_nextFrame) << " seconds\n\n";
+
+	std::cout << "Using Octree: " << (m_useOctree ? "Yes\n" : "No\n");
+	std::cout << "Thread Mode: " << getThreadedModeString(m_threadedMode) << "\n";
+	if (m_threadedMode != ThreadedMode::eDisabled)
+	{
+		std::cout << "Num Threads: " << m_numThreads << "\n\n";
+	}
+	std::cout << "Rays Per Pixel: " << m_samplesPerPixel << "\n";
+	std::cout << "Max Light Bounces: " << m_maxBounces << "\n";
+	std::cout << "Num Objects: " << m_objects.size() << "\n\n";
 }

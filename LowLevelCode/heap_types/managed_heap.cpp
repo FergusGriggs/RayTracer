@@ -2,6 +2,8 @@
 
 #include "../header_footer.h"
 
+#include <iostream>
+
 ManagedHeap::ManagedHeap(Type type) :
 	m_type(type),
 	m_bytesAllocated(0),
@@ -12,6 +14,10 @@ ManagedHeap::ManagedHeap(Type type) :
 
 ManagedHeap::~ManagedHeap()
 {
+	if (m_bytesAllocated != 0)
+	{
+		std::cout << "Heap of type " << getTypeName() << " had " << m_bytesAllocated << " bytes allocated when it was deconstructed (Try using delete next time kid)\n";
+	}
 }
 
 ManagedHeap::Type ManagedHeap::getType() const
@@ -27,6 +33,22 @@ void ManagedHeap::updateBytesAllocated(size_t size)
 void ManagedHeap::updateBytesDeallocated(size_t size)
 {
 	m_bytesAllocated -= size;
+}
+
+std::string ManagedHeap::getTypeName() const
+{
+	switch (m_type)
+	{
+	case ManagedHeap::Type::eDefault:
+		return "eDefault";
+	case ManagedHeap::Type::eGraphics:
+		return "eGraphics";
+	case ManagedHeap::Type::eAudio:
+		return "eAudio";
+	case ManagedHeap::Type::ePhysics:
+		return "ePhysics";
+	}
+	return "eInvalid";
 }
 
 size_t ManagedHeap::getBytesAllocated() const

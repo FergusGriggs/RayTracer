@@ -24,6 +24,7 @@ public:
 	void updateBytesAllocated(size_t size);
 	void updateBytesDeallocated(size_t size);
 
+	std::string getTypeName() const;
 	size_t getBytesAllocated() const;
 
 	Header* getLastHeader() const;

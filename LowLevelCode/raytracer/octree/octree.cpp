@@ -54,9 +54,11 @@ void Octree::rayTrace(const Ray& ray, TraceResult& traceResult)
 		m_externalObjects[externalObjectIndex]->intersect(ray, traceResult);
 	}
 
+	// Retrieve all the objects in the confirmed pools of the octree nodes that the ray passed through
 	m_traceObjects.clear();
 	m_root->rayTrace(ray, m_traceObjects);
 
+	// Test for collision against those objects
 	for (int traceObjectIndex = 0; traceObjectIndex < m_traceObjects.size(); ++traceObjectIndex)
 	{
 		m_traceObjects[traceObjectIndex]->intersect(ray, traceResult);

@@ -8,15 +8,16 @@ class Material
 {
 public:
     Material();
-    Material(const Vec3f& baseColour, float roughness = 0.7f, float metallic = 0.0f, float transmission = 0.0f, const Vec3f& emissiveColour = 0.0f);
+    Material(const Vec3f& baseColour, float roughness = 0.7f, float metallic = 0.0f, float transmission = 0.0f, float IOR = 0.0f, const Vec3f& emissiveColour = 0.0f);
     ~Material();
 
     const Vec3f& getBaseColour() const;
     const Vec3f& getEmissiveColour() const;
 
-    float getTransmission() const;
     float getRoughness() const;
     float getMetallic() const;
+    float getTransmission() const;
+    float getIOR() const;
 
     bool scatter(const Ray& in, const TraceResult& traceResult, Vec3f& attenuation, Ray& scattered) const;
 
@@ -26,6 +27,8 @@ private:
     
     float m_roughness;
     float m_metallic;
+
     float m_transmission;
+    float m_IOR;
 };
 

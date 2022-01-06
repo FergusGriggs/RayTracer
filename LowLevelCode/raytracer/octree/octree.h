@@ -4,7 +4,7 @@
 
 #include "octree_node.h"
 
-#include "../objects/Object.h"
+#include "../objects/object.h"
 #include "../trace_result.h"
 
 class Octree

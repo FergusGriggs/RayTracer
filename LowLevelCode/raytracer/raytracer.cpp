@@ -28,9 +28,6 @@
 #include <iostream>
 #include <cassert>
 
-#include <thread>
-#include <mutex>  
-
 #include <cstdio>
 
 // Windows only
@@ -38,7 +35,7 @@
 #include <sstream>
 #include <string.h>
 
-#include "rapidjson/document.h"
+#include "../includes/rapidjson/document.h"
 
 #include "objects/sphere.h"
 #include "raytracer.h"
@@ -143,8 +140,8 @@ static void loadValueKeyFrames(KeyFramedValue<T>& valueKeyFrames, rapidjson::Val
 Raytracer::Raytracer()
 {
 	srand(13);
-
 	std::string filePath = "raytracer/scenes/test.json";
+
 	loadObjects(filePath);
 
 	Timer animationTimer;
@@ -656,8 +653,11 @@ void Raytracer::renderFrameAtTime(float time, int frameNumber, int threadID, uns
 	if (m_cStyleWrite)
 	{
 		std::FILE* file;
+#ifdef __unix
+		file = std::fopen(filename, "wb");	
+#else
 		fopen_s(&file, filename, "wb");
-
+#endif
 		if (file)
 		{
 			std::stringstream metaDataSS;

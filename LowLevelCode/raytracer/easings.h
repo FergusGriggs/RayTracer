@@ -89,6 +89,8 @@ static float getValueEasedIn(float x, EaseType easeType)
 		}
 	}
 	}
+
+	return x;
 }
 
 static float getValueEasedOut(float x, EaseType easeType)
@@ -120,4 +122,6 @@ static float getValueEasedOut(float x, EaseType easeType)
 	case EaseType::eBounce:
 		return 1.0f - getValueEasedIn(1.0f - x, EaseType::eBounce);
 	}
+
+	return x;
 }

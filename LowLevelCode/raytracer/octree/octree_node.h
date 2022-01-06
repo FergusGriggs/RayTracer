@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../Vec3.h"
+#include "../vec3.h"
 
-#include "../objects/Object.h"
+#include "../objects/object.h"
 
 #define OCTREE_MAX_TEMP_ENTITIES 3
 

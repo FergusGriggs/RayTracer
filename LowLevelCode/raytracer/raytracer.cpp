@@ -140,7 +140,7 @@ static void loadValueKeyFrames(KeyFramedValue<T>& valueKeyFrames, rapidjson::Val
 Raytracer::Raytracer()
 {
 	srand(13);
-	std::string filePath = "raytracer/scenes/single_sphere.json";//single_sphere
+	std::string filePath = "raytracer/scenes/test.json";//single_sphere
 
 	loadObjects(filePath);
 
@@ -526,7 +526,7 @@ void Raytracer::runMultithreaded()
 	m_nextFrameTime = 0.0f;
 
 #ifdef __unix
-	std::vector<pthread_t*> threads;
+	std::vector<pthread_t> threads;
 	int  discardReturn;
 #else
 	std::vector<std::thread*> threads;
@@ -547,7 +547,14 @@ void Raytracer::runMultithreaded()
 		for (int i = 0; i < m_numThreads; ++i)
 		{
 #ifdef __unix
-			discardReturn = pthread_create(&threads[i], NULL, &Raytracer::continualThreadLoop, this, i, imageBuffers[threads.size()]);
+			UnixThreadArgs args;
+			args.m_raytracer = this;
+			args.m_threadedMode = m_threadedMode;
+			args.m_threadID = i;
+			args.m_imageBuffer = imageBuffers[i];
+			
+			threads.push_back(pthread_t());
+			discardReturn = pthread_create(&threads[i], NULL, &unixThreadRunner, &args);
 #else
 			threads.push_back(new std::thread(&Raytracer::continualThreadLoop, this, i, imageBuffers[threads.size()]));
 #endif
@@ -557,12 +564,14 @@ void Raytracer::runMultithreaded()
 		for (int threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
 		{
 #ifdef __unix
-			pthread_join(*threads[threadIndex], NULL);
+			pthread_join(threads[threadIndex], NULL);
 #else
 			threads[threadIndex]->join();
+		    delete threads[threadIndex];
 #endif
-			delete threads[threadIndex];
 		}
+
+		threads.clear();
 	}
 	else if (m_threadedMode == ThreadedMode::eBatched)
 	{
@@ -590,7 +599,16 @@ void Raytracer::runMultithreaded()
 				if (m_nextFrameTime <= m_animationDuration)
 				{
 #ifdef __unix
-					discardReturn = pthread_create(&threads[i], NULL, &Raytracer::renderFrameAtTime, this, m_nextFrameTime, m_nextFrame++, i, imageBuffers[threads.size()]);
+					UnixThreadArgs args;
+					args.m_raytracer = this;
+					args.m_threadedMode = m_threadedMode;
+					args.m_threadID = i;
+					args.m_imageBuffer = imageBuffers[i];
+					args.m_frameNumber = m_nextFrame++;
+					args.m_frameTime = m_nextFrameTime;
+
+					threads.push_back(pthread_t());
+					discardReturn = pthread_create(&threads[i], NULL, &unixThreadRunner, &args);
 #else
 					threads.push_back(new std::thread(&Raytracer::renderFrameAtTime, this, m_nextFrameTime, m_nextFrame++, i, imageBuffers[threads.size()]));
 #endif
@@ -607,11 +625,11 @@ void Raytracer::runMultithreaded()
 			for (int threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
 			{
 #ifdef __unix
-				pthread_join(*threads[threadIndex], NULL);
+				pthread_join(threads[threadIndex], NULL);
 #else
 				threads[threadIndex]->join();
-#endif
 				delete threads[threadIndex];
+#endif
 			}
 
 			threads.clear();
@@ -741,10 +759,17 @@ void Raytracer::renderFrameAtTime(float time, int frameNumber, int threadID, uns
 	frameTimer.tock();
 
 	float timeToComplete = static_cast<float>(frameTimer.duration().count()) * 0.000001f;
+#ifdef __unix
+	pthread_mutex_lock(&m_outputMutex);
+#else
 	m_outputMutex.lock();
+#endif
 	std::cout << "Rendered Frame " << frameNumber << " [Thread ID " << threadID << "] [Took " << timeToComplete << "s]\n";
+#ifdef __unix
+	pthread_mutex_unlock(&m_outputMutex);
+#else
 	m_outputMutex.unlock();
-
+#endif
 	addFrameStats(timeToComplete);
 }
 

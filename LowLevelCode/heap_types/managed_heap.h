@@ -2,7 +2,7 @@
 
 #define CHECK_CODE 0xBAADCA75
 
-#define LOG_MEM_ALLOC_VERBOSE
+//#define LOG_MEM_ALLOC_VERBOSE
 
 #ifdef LOG_MEM_ALLOC_VERBOSE
 #define MEM_ALLOC_COUT(cout_msg) std::cout << cout_msg << "\n";

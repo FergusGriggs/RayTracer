@@ -4,13 +4,6 @@
 #include <unordered_map>
 #include <string.h>
 
-#ifdef __unix
-#include <pthread.h>
-#else
-#include <thread>
-#include <mutex> 
-#endif
-
 #include "objects/object.h"
 #include "octree/octree.h"
 #include "ray.h"
@@ -24,6 +17,14 @@ enum class ThreadedMode
 	eBatched,
 	eContinual
 };
+
+#ifdef __unix
+#include <pthread.h>
+#include <thread>
+#else
+#include <thread>
+#include <mutex> 
+#endif
 
 static std::string getThreadedModeString(ThreadedMode mode)
 {
@@ -106,3 +107,30 @@ private:
 
 	unsigned char* m_imageBuffer;
 };
+
+#ifdef __unix
+struct UnixThreadArgs
+{
+	Raytracer*     m_raytracer = nullptr;
+	ThreadedMode   m_threadedMode = ThreadedMode::eContinual;
+	int            m_threadID = 0;
+	float          m_frameTime = 0.0f;
+	int            m_frameNumber = 0;
+	unsigned char* m_imageBuffer = nullptr;
+};
+
+static void * unixThreadRunner(void *voidArgs)
+{
+	UnixThreadArgs* args = (UnixThreadArgs*)voidArgs;
+	if (args->m_threadedMode == ThreadedMode::eContinual)
+	{
+		args->m_raytracer->continualThreadLoop(args->m_threadID, args->m_imageBuffer);
+	}
+	else if (args->m_threadedMode == ThreadedMode::eBatched)
+	{
+		args->m_raytracer->renderFrameAtTime(args->m_frameTime, args->m_frameNumber, args->m_threadID, args->m_imageBuffer);
+	}
+
+	return nullptr;
+}
+#endif

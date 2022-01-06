@@ -11,5 +11,5 @@ void* operator new[](size_t size);
 void* operator new(size_t size, ManagedHeap* heap);
 void* operator new[](size_t size, ManagedHeap* heap);
 
-void operator delete(void* memoryAddress);
-void operator delete[](void* memoryAddress);
+void operator delete(void* memoryAddress) noexcept;
+void operator delete[](void* memoryAddress) noexcept;

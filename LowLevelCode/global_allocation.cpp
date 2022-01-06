@@ -95,12 +95,12 @@ void* operator new[](size_t size, ManagedHeap* heap)
 	return allocateManaged(size, heap);
 }
 
-void operator delete(void* memoryAddress)
+void operator delete(void* memoryAddress) noexcept
 {
 	deallocateManaged(memoryAddress);
 }
 
-void operator delete[](void* memoryAddress)
+void operator delete[](void* memoryAddress) noexcept
 {
 	return deallocateManaged(memoryAddress);
 }

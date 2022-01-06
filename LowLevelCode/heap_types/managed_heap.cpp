@@ -7,16 +7,21 @@
 ManagedHeap::ManagedHeap(Type type) :
 	m_type(type),
 	m_bytesAllocated(0),
+	m_firstHeader(nullptr),
 	m_lastHeader(nullptr),
 	m_mutex()
 {
+	std::cout << "Constructed " << getTypeName() << " heap\n";
 }
 
 ManagedHeap::~ManagedHeap()
 {
+	std::cout << "Deconstructed " << getTypeName() << " heap\n";
+
 	if (m_bytesAllocated != 0)
 	{
 		std::cout << "Heap of type " << getTypeName() << " had " << m_bytesAllocated << " bytes allocated when it was deconstructed (Try using delete next time kid)\n";
+		checkHeapIntegrity();
 	}
 }
 
@@ -27,15 +32,31 @@ ManagedHeap::Type ManagedHeap::getType() const
 
 void ManagedHeap::updateBytesAllocated(size_t size)
 {
+#ifdef __unix
+	pthread_mutex_lock(&m_mutex);
 	m_bytesAllocated += size;
+	pthread_mutex_unlock(&m_mutex);
+#else
+	m_mutex.lock();
+	m_bytesAllocated += size;
+	m_mutex.unlock();
+#endif
 }
 
 void ManagedHeap::updateBytesDeallocated(size_t size)
 {
+#ifdef __unix
+	pthread_mutex_lock(&m_mutex);
 	m_bytesAllocated -= size;
+	pthread_mutex_unlock(&m_mutex);
+#else
+	m_mutex.lock();
+	m_bytesAllocated -= size;
+	m_mutex.unlock();
+#endif
 }
 
-std::string ManagedHeap::getTypeName() const
+const char* ManagedHeap::getTypeName() const
 {
 	switch (m_type)
 	{
@@ -63,7 +84,16 @@ Header* ManagedHeap::getLastHeader() const
 
 void ManagedHeap::addHeader(Header* header)
 {
+#ifdef __unix
+	pthread_mutex_lock(&m_mutex);
+#else
 	m_mutex.lock();
+#endif
+
+	if (m_firstHeader == nullptr)
+	{
+		m_firstHeader = header;
+	}
 
 	header->m_prev = m_lastHeader;
 
@@ -73,12 +103,26 @@ void ManagedHeap::addHeader(Header* header)
 	}
 	m_lastHeader = header;
 
+#ifdef __unix
+	pthread_mutex_unlock(&m_mutex);
+#else
 	m_mutex.unlock();
+#endif
 }
 
 void ManagedHeap::removeHeader(Header* header)
 {
+#ifdef __unix
+	pthread_mutex_lock(&m_mutex);
+#else
 	m_mutex.lock();
+#endif
+
+	// Update first header
+	if (header == m_firstHeader)
+	{
+		m_firstHeader = header->m_next;
+	}
 
 	// Update previous header
 	if (header->m_prev != nullptr)
@@ -98,5 +142,40 @@ void ManagedHeap::removeHeader(Header* header)
 		m_lastHeader = header->m_prev;
 	}
 
+#ifdef __unix
+	pthread_mutex_unlock(&m_mutex);
+#else
 	m_mutex.unlock();
+#endif
+}
+
+void ManagedHeap::checkHeapIntegrity() const
+{
+	// Walking the heap
+	int bytesCounted = 0;
+	int headerFooterSize = sizeof(Header) + sizeof(Footer);
+	bool valid = true;
+	Header* header = m_firstHeader;
+	while (header != nullptr)
+	{
+		bytesCounted += header->m_size + headerFooterSize;
+		
+		MEM_ALLOC_COUT("Header " << header << " had size " << header->m_size << "\n");
+
+		if (header->m_checkCode != CHECK_CODE)
+		{
+			MEM_ALLOC_COUT_ERROR("Failed to walk heap, header: " << header << " was invalid\n");
+			valid = false;
+		}
+
+		header = header->m_next;
+	}
+
+	if (bytesCounted != m_bytesAllocated)
+	{
+		MEM_ALLOC_COUT_ERROR("Failed to walk heap, bytes counted was " << bytesCounted << " but member allocated bytes is " << m_bytesAllocated << "\n");
+		valid = false;
+	}
+
+	std::cout << "Heap walked with no issues\n";
 }

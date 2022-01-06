@@ -1,10 +1,8 @@
 #pragma once
 
-#include <unordered_map>
-
 #include "heap_types/default_heap.h"
 
-static DefaultHeap s_defaultHeap;
+#define MAX_HEAPS 10
 
 class HeapManager
 {
@@ -17,12 +15,20 @@ public:
 		return staticInstance;
 	}
 
+	void         initialiseSpecificHeaps();
+
 	void         addHeapPtr(ManagedHeap* heap);
 	ManagedHeap* getHeapPtr(ManagedHeap::Type heapType);
+	DefaultHeap* getDefaultHeap();
+
+	void printHeapUsages() const;
 
 private:
 	HeapManager();
 
-	std::unordered_map<ManagedHeap::Type, ManagedHeap*> m_heaps;
+	DefaultHeap m_defaultHeap;
+
+	int          m_numHeaps;
+	ManagedHeap* m_allHeaps[MAX_HEAPS];
 };
 

@@ -2,7 +2,7 @@
 	"Scene": {
 		"MetaData": {
 			"animation_duration": 100.0,
-			"time_increase_per_frame": 0.782
+			"time_increase_per_frame": 2.0
 		},
 
 		"Materials": [

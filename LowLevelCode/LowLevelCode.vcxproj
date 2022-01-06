@@ -200,6 +200,7 @@
     <ClInclude Include="raytracer\vec3.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="raytracer\scenes\single_sphere.json" />
     <None Include="raytracer\scenes\test.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

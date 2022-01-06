@@ -146,5 +146,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="raytracer\scenes\test.json" />
+    <None Include="raytracer\scenes\single_sphere.json" />
   </ItemGroup>
 </Project>

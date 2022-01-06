@@ -7,11 +7,14 @@
 
 #include "raytracer/raytracer.h"
 
+#include "raytracer//objects/sphere.h"
+
 class MyObject
 {
 public:
     MyObject() :
-        m_member(0)
+        m_member(0),
+        m_member2ElectricBoogaloo("String that is not null")
     {
         std::cout << "MyObject Constructor\n";
     }
@@ -21,24 +24,42 @@ public:
         std::cout << "MyObject Deconstructor\n";
     }
 
-    void* operator new(size_t size)
-    {
-        std::cout << "Memory created using class new\n";
-        return ::operator new(size);
-    }
-
-    void operator delete(void* memoryAddress)
-    {
-        std::cout << "Deleted using class delete\n";
-        return ::operator delete(memoryAddress);
-    }
-
 private:
     int m_member;
+    std::string m_member2ElectricBoogaloo;
 };
+
+void test()
+{
+    HeapManager::it().printHeapUsages();
+
+    std::cout << "Creating object list\n";
+    Material testMat;
+    std::vector<SphereSnapshot*> objectList;
+    for (int i = 0; i < 100; i++)
+    {
+        objectList.push_back(new SphereSnapshot(Vec3f(0.0f), 1.0f, testMat, true));
+    }
+
+    HeapManager::it().printHeapUsages();
+
+    std::cout << "Clearing object list\n";
+
+    for (int i = 0; i < 100; i++)
+    {
+        delete objectList[i];
+    }
+    objectList.clear();
+}
 
 int main()
 {
+    HeapManager::it().initialiseSpecificHeaps();
+
+    //test();
+
+    HeapManager::it().printHeapUsages();
+    
     Raytracer* raytracer = new Raytracer();
 
     delete raytracer;

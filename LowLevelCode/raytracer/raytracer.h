@@ -4,14 +4,19 @@
 #include <unordered_map>
 #include <string.h>
 
+#ifdef __unix
+#include <pthread.h>
+#else
 #include <thread>
-#include <mutex>  
+#include <mutex> 
+#endif
 
 #include "objects/object.h"
 #include "octree/octree.h"
 #include "ray.h"
 #include "trace_result.h"
 #include "camera.h"
+#include "../heap_manager.h"
 
 enum class ThreadedMode
 {
@@ -76,7 +81,7 @@ private:
 
 	bool m_useOctree = true;
 
-	ThreadedMode m_threadedMode = ThreadedMode::eDisabled;
+	ThreadedMode m_threadedMode = ThreadedMode::eBatched;
 	int m_numThreads = std::thread::hardware_concurrency() * 4;
 
 	float m_timeIncreasePerFrame;
@@ -89,9 +94,15 @@ private:
 	float m_totalFrameTimes = 0.0f;
 	float m_animationRenderTime = 0.0f;
 
+#ifdef __unix
+	pthread_mutex_t m_outputMutex;
+	pthread_mutex_t m_nextThreadTimeMutex;
+	pthread_mutex_t m_threadStatsMutex;
+#else
 	std::mutex m_outputMutex;
 	std::mutex m_nextThreadTimeMutex;
 	std::mutex m_threadStatsMutex;
+#endif
 
 	unsigned char* m_imageBuffer;
 };

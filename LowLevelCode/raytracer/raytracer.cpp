@@ -140,12 +140,16 @@ static void loadValueKeyFrames(KeyFramedValue<T>& valueKeyFrames, rapidjson::Val
 Raytracer::Raytracer()
 {
 	srand(13);
-	std::string filePath = "raytracer/scenes/test.json";
+	std::string filePath = "raytracer/scenes/single_sphere.json";//single_sphere
 
 	loadObjects(filePath);
 
 	Timer animationTimer;
 	
+	std::cout << "Beginning render\n";
+
+	HeapManager::it().printHeapUsages();
+
 	if (m_threadedMode != ThreadedMode::eDisabled)
 	{
 		runMultithreaded();
@@ -163,6 +167,10 @@ Raytracer::Raytracer()
 
 Raytracer::~Raytracer()
 {
+	for (int objectIndex = 0; objectIndex < m_objects.size(); ++objectIndex)
+	{
+		delete m_objects[objectIndex];
+	}
 }
 
 void Raytracer::loadObjects(const std::string& sceneFilePath)
@@ -313,8 +321,8 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 	Vec3f frontMax(7.0f, 50.0f, 20.0f);
 	BoundingBox frontSpawnBox(frontMin, frontMax - frontMin);
 	
-	addRandomFallingSpheres(490, backSpawnBox);
-	addRandomFallingSpheres(6, frontSpawnBox);
+	//addRandomFallingSpheres(490, backSpawnBox);
+	//addRandomFallingSpheres(6, frontSpawnBox);
 }
 
 void Raytracer::removeAllObjects()
@@ -483,17 +491,31 @@ Vec3f Raytracer::octreeTrace(const Ray& ray, int depth, Octree& octree) const
 
 void Raytracer::run()
 {
+	std::cout << "Allocating image buffer\n";
+
 	m_imageBuffer = new unsigned char[m_width * m_height * 3];
+
+	HeapManager::it().printHeapUsages();
 
 	m_nextFrame = 0;
 	m_nextFrameTime = 0.0f;
+
+	int statPrintFrame = 10;
 
 	while (m_nextFrameTime <= m_animationDuration)
 	{
 		renderFrameAtTime(m_nextFrameTime, m_nextFrame++, 0, m_imageBuffer);
 
 		m_nextFrameTime += m_timeIncreasePerFrame;
+
+		if (m_nextFrame > statPrintFrame)
+		{
+			HeapManager::it().printHeapUsages();
+			statPrintFrame += 10;
+		}
 	}
+
+	std::cout << "Deallocating image buffer\n";
 
 	delete[] m_imageBuffer;
 }
@@ -503,8 +525,16 @@ void Raytracer::runMultithreaded()
 	m_nextFrame = 0;
 	m_nextFrameTime = 0.0f;
 
+#ifdef __unix
+	std::vector<pthread_t*> threads;
+	int  discardReturn;
+#else
 	std::vector<std::thread*> threads;
+#endif
+
 	std::vector<unsigned char*> imageBuffers;
+
+	std::cout << "Allocating thread image buffers\n";
 
 	// Create thread image buffers
 	for (int i = 0; i < m_numThreads; ++i)
@@ -516,13 +546,21 @@ void Raytracer::runMultithreaded()
 	{
 		for (int i = 0; i < m_numThreads; ++i)
 		{
+#ifdef __unix
+			discardReturn = pthread_create(&threads[i], NULL, &Raytracer::continualThreadLoop, this, i, imageBuffers[threads.size()]);
+#else
 			threads.push_back(new std::thread(&Raytracer::continualThreadLoop, this, i, imageBuffers[threads.size()]));
+#endif
 		}
 
 		// Wait for all threads to finish
 		for (int threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
 		{
+#ifdef __unix
+			pthread_join(*threads[threadIndex], NULL);
+#else
 			threads[threadIndex]->join();
+#endif
 			delete threads[threadIndex];
 		}
 	}
@@ -532,16 +570,30 @@ void Raytracer::runMultithreaded()
 
 		while (!done)
 		{
+#ifdef __unix
+			pthread_mutex_lock(&m_outputMutex);
+#else
 			m_outputMutex.lock();
-			std::cout << "Starting new thread batch [" << (m_nextFrameTime / m_animationDuration) * 100.0f << " % Done] [Graphics Heap Allocated Bytes:" << HeapManager::it().getHeapPtr(ManagedHeap::Type::eGraphics)->getBytesAllocated() << "]\n";
+#endif
+			std::cout << "Starting new thread batch [" << (m_nextFrameTime / m_animationDuration) * 100.0f << " % Done]\n";
+
+			HeapManager::it().printHeapUsages();
+
+#ifdef __unix
+			pthread_mutex_unlock(&m_outputMutex);
+#else
 			m_outputMutex.unlock();
+#endif
 
 			for (int i = 0; i < m_numThreads; ++i)
 			{
 				if (m_nextFrameTime <= m_animationDuration)
 				{
+#ifdef __unix
+					discardReturn = pthread_create(&threads[i], NULL, &Raytracer::renderFrameAtTime, this, m_nextFrameTime, m_nextFrame++, i, imageBuffers[threads.size()]);
+#else
 					threads.push_back(new std::thread(&Raytracer::renderFrameAtTime, this, m_nextFrameTime, m_nextFrame++, i, imageBuffers[threads.size()]));
-
+#endif
 					m_nextFrameTime += m_timeIncreasePerFrame;
 				}
 				else
@@ -554,13 +606,19 @@ void Raytracer::runMultithreaded()
 			// Wait for all threads in the batch to finish
 			for (int threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
 			{
+#ifdef __unix
+				pthread_join(*threads[threadIndex], NULL);
+#else
 				threads[threadIndex]->join();
+#endif
 				delete threads[threadIndex];
 			}
 
 			threads.clear();
 		}
 	}
+
+	std::cout << "Deallocating thread image buffers\n";
 
 	// Delete thread image buffers
 	for (int i = 0; i < m_numThreads; ++i)
@@ -705,12 +763,21 @@ void Raytracer::continualThreadLoop(int threadID, unsigned char* imageBuffer)
 
 void Raytracer::getNextFrameAndTime(int& frame, float& time)
 {
+#ifdef __unix
+	pthread_mutex_lock(&m_nextThreadTimeMutex);
+#else
 	m_nextThreadTimeMutex.lock();
+#endif
+
 	// We have reached the end of the animation, return -1.0f
 	// to let the thread know it should terminate
 	if (m_nextFrameTime > m_animationDuration)
 	{
+#ifdef __unix
+		pthread_mutex_unlock(&m_nextThreadTimeMutex);
+#else
 		m_nextThreadTimeMutex.unlock();
+#endif
 		time = -1.0f;
 		return;
 	}
@@ -720,20 +787,33 @@ void Raytracer::getNextFrameAndTime(int& frame, float& time)
 	m_nextFrameTime += m_timeIncreasePerFrame;
 
 	frame = m_nextFrame++;
+
+#ifdef __unix
+	pthread_mutex_unlock(&m_nextThreadTimeMutex);
+#else
 	m_nextThreadTimeMutex.unlock();
+#endif
 
 	return;
 }
 
 void Raytracer::addFrameStats(float timeToComplete)
 {
+#ifdef __unix
+	pthread_mutex_lock(&m_threadStatsMutex);
+#else
 	m_threadStatsMutex.lock();
+#endif
 
 	m_fastestFrameTime = fminf(m_fastestFrameTime, timeToComplete);
 	m_slowestFrameTime = fmaxf(m_slowestFrameTime, timeToComplete);
 	m_totalFrameTimes += timeToComplete;
 
+#ifdef __unix
+	pthread_mutex_unlock(&m_threadStatsMutex);
+#else
 	m_threadStatsMutex.unlock();
+#endif
 }
 
 void Raytracer::printRenderStats() const

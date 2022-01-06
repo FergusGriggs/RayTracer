@@ -1,0 +1,36 @@
+{
+	"Scene": {
+		"MetaData": {
+			"animation_duration": 1.0,
+			"time_increase_per_frame": 1.0
+		},
+
+		"Materials": [
+			{
+				"id": "red",
+				"base_colour": [ 1.0, 0.2, 0.2 ]
+			}
+		],
+
+		"Objects": [
+			{
+				"type": "Sphere",
+				"material_id": "red",
+
+				"position_keyframes": [
+					{
+						"value": [ 0.0, -2.0, -25.0 ],
+						"time": 0.0
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 2.0,
+						"time": 0.0
+					}
+				]
+			}
+		]
+	}
+}

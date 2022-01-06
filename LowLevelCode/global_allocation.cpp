@@ -3,30 +3,20 @@
 #include <iostream>
 
 #include "header_footer.h"
-
-#define CHECK_CODE 0xBAADCA75
-
-//#define LOG_MEM_ALLOC
-
-#ifdef LOG_MEM_ALLOC
-#define MEM_ALLOC_COUT(cout_msg) std::cout << cout_msg << "\n";
-#else
-#define MEM_ALLOC_COUT(cout)
-#endif
-
+#include "heap_manager.h"
 
 typedef char byte;
 
 void* allocateManaged(size_t size, ManagedHeap* heap)
 {
-	MEM_ALLOC_COUT("New called with size of " << size)
-
 	size_t fullSize = sizeof(Header) + size + sizeof(Footer);
 	byte* memoryAddressHeader = static_cast<byte*>(malloc(fullSize));
 
 	Header* headerPtr = reinterpret_cast<Header*>(memoryAddressHeader);
 	if (headerPtr != nullptr)
 	{
+		MEM_ALLOC_COUT("New called with size of " << size << " on header " << headerPtr << "\n")
+
 		headerPtr->m_checkCode = CHECK_CODE;
 		headerPtr->m_size = size;
 
@@ -42,7 +32,7 @@ void* allocateManaged(size_t size, ManagedHeap* heap)
 		}
 		else
 		{
-			MEM_ALLOC_COUT("New called with a nullptr heap")
+			MEM_ALLOC_COUT_ERROR("New called with a nullptr heap with on header " << headerPtr << "\n")
 		}
 	}
 
@@ -59,19 +49,19 @@ void* allocateManaged(size_t size, ManagedHeap* heap)
 
 void deallocateManaged(void* memoryAddress)
 {
-	MEM_ALLOC_COUT("Delete called on address " << memoryAddress)
+	
 	byte* memoryAddressObject = static_cast<byte*>(memoryAddress);
 
 	Header* headerPtr = reinterpret_cast<Header*>(memoryAddressObject - sizeof(Header));
 	if (headerPtr->m_checkCode != CHECK_CODE)
 	{
-		MEM_ALLOC_COUT("Things went bad with header of " << memoryAddress)
+		MEM_ALLOC_COUT_ERROR("Things went bad with header " << headerPtr << " for object " << memoryAddress)
 	}
 
 	Footer* footerPtr = reinterpret_cast<Footer*>(memoryAddressObject + headerPtr->m_size);
 	if (footerPtr->m_checkCode != CHECK_CODE)
 	{
-		MEM_ALLOC_COUT("Things went bad with footer of " << memoryAddress)
+		MEM_ALLOC_COUT_ERROR("Things went bad with footer " << footerPtr << " for object " << memoryAddress)
 	}
 
 	ManagedHeap* heapPtr = headerPtr->m_heapPtr;
@@ -87,12 +77,12 @@ void deallocateManaged(void* memoryAddress)
 
 void* operator new(size_t size)
 {
-	return allocateManaged(size, &s_defaultHeap);
+	return allocateManaged(size, HeapManager::it().getDefaultHeap());
 }
 
 void* operator new[](size_t size)
 {
-	return allocateManaged(size, &s_defaultHeap);
+	return allocateManaged(size, HeapManager::it().getDefaultHeap());
 }
 
 void* operator new(size_t size, ManagedHeap* heap)

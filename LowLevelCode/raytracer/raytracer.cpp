@@ -140,7 +140,7 @@ static void loadValueKeyFrames(KeyFramedValue<T>& valueKeyFrames, rapidjson::Val
 Raytracer::Raytracer()
 {
 	srand(13);
-	std::string filePath = "raytracer/scenes/test.json";//single_sphere
+	std::string filePath = "raytracer/scenes/50frames.json";//single_sphere//test//10frames
 
 	loadObjects(filePath);
 
@@ -321,8 +321,8 @@ void Raytracer::loadObjects(const std::string& sceneFilePath)
 	Vec3f frontMax(7.0f, 50.0f, 20.0f);
 	BoundingBox frontSpawnBox(frontMin, frontMax - frontMin);
 	
-	//addRandomFallingSpheres(490, backSpawnBox);
-	//addRandomFallingSpheres(6, frontSpawnBox);
+	addRandomFallingSpheres(490, backSpawnBox);
+	addRandomFallingSpheres(6, frontSpawnBox);
 }
 
 void Raytracer::removeAllObjects()
@@ -541,6 +541,8 @@ void Raytracer::runMultithreaded()
 	{
 		imageBuffers.push_back(new unsigned char[m_width * m_height * 3]);
 	}
+
+	std::cout << "Threads dispatch beginning\n";
 
 	if (m_threadedMode == ThreadedMode::eContinual)
 	{

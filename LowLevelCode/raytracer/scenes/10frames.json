@@ -1,0 +1,168 @@
+{
+	"Scene": {
+		"MetaData": {
+			"animation_duration": 100.0,
+			"time_increase_per_frame": 10.1
+		},
+
+		"Materials": [
+			{
+				"id": "glass",
+				"base_colour": [ 1.0, 1.0, 1.0 ],
+				"roughness": 0.1,
+				"transmission": 1.0,
+				"IOR": 1.52
+			},
+			{
+				"id": "metal",
+				"base_colour": [ 0.8, 0.8, 0.8 ],
+				"metallic": 1.0
+			},
+			{
+				"id": "gold_metal",
+				"base_colour": [ 0.8, 0.6, 0.2 ],
+				"roughness": 0.05,
+				"metallic": 1.0
+			},
+			{
+				"id": "yellow",
+				"base_colour": [ 0.8, 0.6, 0.2 ]
+			},
+			{
+				"id": "green",
+				"base_colour": [ 0.2, 0.8, 0.2 ]
+			},
+			{
+				"id": "red",
+				"base_colour": [ 1.0, 0.2, 0.2 ]
+			},
+			{
+				"id": "blue",
+				"base_colour": [ 0.2, 0.2, 0.8 ]
+			}
+		],
+
+		"Objects": [
+			{
+				"type": "Sphere",
+				"material_id": "metal",
+
+				"active_keyframes": [
+					{
+						"value": false,
+						"time": 0.0
+					},
+					{
+						"value": true,
+						"time": 10.0
+					}
+				],
+
+				"position_keyframes": [
+					{
+						"value": [ 5.0, 20.0, -25.0 ],
+						"time": 10.0
+					},
+					{
+						"value": [ 5.0, -2.0, -25.0 ],
+						"time": 80.0,
+						"ease_in": "bounce"
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 2.0,
+						"time": 0.0
+					}
+				]
+			},
+
+			{
+				"type": "Sphere",
+				"material_id": "glass",
+
+				"active_keyframes": [
+					{
+						"value": false,
+						"time": 0.0
+					},
+					{
+						"value": true,
+						"time": 20.0
+					}
+				],
+
+				"position_keyframes": [
+					{
+						"value": [ -5.0, 20.0, -25.0 ],
+						"time": 20.0
+					},
+					{
+						"value": [ -5.0, -2.0, -25.0 ],
+						"time": 90.0,
+						"ease_in": "bounce"
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 2.0,
+						"time": 0.0
+					}
+				]
+			},
+
+			{
+				"type": "Sphere",
+				"material_id": "red",
+
+				"position_keyframes": [
+					{
+						"value": [ 0.0, 20.0, -25.0 ],
+						"time": 0.0
+					},
+					{
+						"value": [ 0.0, -2.0, -25.0 ],
+						"time": 70.0,
+						"ease_in": "bounce"
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 2.0,
+						"time": 0.0
+					}
+				]
+			},
+
+			{
+				"type": "Sphere",
+				"material_id": "gold_metal",
+				"octree_compatible": false,
+
+				"active_keyframes": [
+					{
+						"value": true,
+						"time": 0.0
+					}
+				],
+
+				"position_keyframes": [
+					{
+						"value": [ 0.0, -100003.95, 0.0 ],
+						"time": 0.0
+					}
+				],
+
+				"radius_keyframes": [
+					{
+						"value": 100000.0,
+						"time": 0.0
+					}
+				]
+			}
+		]
+	}
+}

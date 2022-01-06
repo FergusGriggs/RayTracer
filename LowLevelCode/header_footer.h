@@ -11,6 +11,8 @@ struct Header
 
 	Header* m_prev;
 	Header* m_next;
+
+	bool m_isPoolAllocated;
 };
 
 struct Footer

@@ -4,10 +4,11 @@
 #include <iostream>
 
 #include "heap_manager.h"
+#include "memory_pools/pool_manager.h"
 
 #include "raytracer/raytracer.h"
 
-#include "raytracer//objects/sphere.h"
+#include "raytracer/objects/sphere.h"
 
 class MyObject
 {
@@ -36,7 +37,7 @@ void test()
     std::cout << "Creating object list\n";
     Material testMat;
     std::vector<SphereSnapshot*> objectList;
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 1; i++)
     {
         objectList.push_back(new SphereSnapshot(Vec3f(0.0f), 1.0f, testMat, true));
     }
@@ -45,7 +46,7 @@ void test()
 
     std::cout << "Clearing object list\n";
 
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 1; i++)
     {
         delete objectList[i];
     }
@@ -54,13 +55,18 @@ void test()
 
 int main()
 {
+    PoolManager::it().initialise();
     HeapManager::it().initialiseSpecificHeaps();
 
-    //test();
+    PoolManager::it().setDontUsePoolsOverride(false);
+
+   // test();
 
     HeapManager::it().printHeapUsages();
     
     Raytracer* raytracer = new Raytracer();
 
     delete raytracer;
+
+    PoolManager::it().clearPools();
 }

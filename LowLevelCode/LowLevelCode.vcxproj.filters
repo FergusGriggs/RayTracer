@@ -63,6 +63,12 @@
     <ClCompile Include="raytracer\camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="memory_pools\memory_pool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memory_pools\pool_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="raytracer\objects\object.h">
@@ -143,9 +149,16 @@
     <ClInclude Include="raytracer\camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="memory_pools\memory_pool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="memory_pools\pool_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="raytracer\scenes\test.json" />
+    <None Include="raytracer\scenes\100frames.json" />
     <None Include="raytracer\scenes\single_sphere.json" />
+    <None Include="raytracer\scenes\10frames.json" />
   </ItemGroup>
 </Project>

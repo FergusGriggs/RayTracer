@@ -80,9 +80,9 @@ private:
 
 	bool m_cStyleWrite = true;
 
-	bool m_useOctree = true;
+	bool m_useOctree = false;
 
-	ThreadedMode m_threadedMode = ThreadedMode::eBatched;
+	ThreadedMode m_threadedMode = ThreadedMode::eContinual;
 	int m_numThreads = std::thread::hardware_concurrency() * 4;
 
 	float m_timeIncreasePerFrame;

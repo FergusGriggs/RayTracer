@@ -16,13 +16,16 @@ ManagedHeap::ManagedHeap(Type type) :
 
 ManagedHeap::~ManagedHeap()
 {
-	std::cout << "Deconstructed " << getTypeName() << " heap\n";
+	std::cout << "Deconstructed " << getTypeName() << " heap. ";
+
+	std::cout << "It had " << m_bytesAllocated << " bytes allocated. ";
 
 	if (m_bytesAllocated != 0)
 	{
-		std::cout << "Heap of type " << getTypeName() << " had " << m_bytesAllocated << " bytes allocated when it was deconstructed (Try using delete next time kid)\n";
-		checkHeapIntegrity();
+		std::cout << "(Try using delete next time kid) ";
 	}
+
+	checkHeapIntegrity();
 }
 
 ManagedHeap::Type ManagedHeap::getType() const

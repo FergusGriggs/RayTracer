@@ -3,6 +3,7 @@
 #include "heap_types/audio_heap.h"
 #include "heap_types/graphics_heap.h"
 #include "heap_types/physics_heap.h"
+#include "memory_pools/pool_manager.h"
 
 #include <iostream>
 
@@ -53,7 +54,7 @@ void HeapManager::printHeapUsages() const
     std::cout << "\nBytes allocated for heaps:\n";
     for (int heapIndex = 0; heapIndex < m_numHeaps; ++heapIndex)
     {
-        std::cout << "    " << m_allHeaps[heapIndex]->getTypeName() << ": " << m_allHeaps[heapIndex]->getBytesAllocated() << "\n";
+        std::cout << "    " << m_allHeaps[heapIndex]->getTypeName() << ": " << m_allHeaps[heapIndex]->getBytesAllocated() << " bytes. ";
         m_allHeaps[heapIndex]->checkHeapIntegrity();
     }
     std::cout << "\n";

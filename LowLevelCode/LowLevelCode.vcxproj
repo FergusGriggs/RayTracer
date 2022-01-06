@@ -155,6 +155,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="memory_pools\memory_pool.cpp" />
+    <ClCompile Include="memory_pools\pool_manager.cpp" />
     <ClCompile Include="raytracer\camera.cpp" />
     <ClCompile Include="global_allocation.cpp" />
     <ClCompile Include="heap_manager.cpp" />
@@ -173,6 +175,8 @@
     <ClCompile Include="raytracer\raytracer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="memory_pools\memory_pool.h" />
+    <ClInclude Include="memory_pools\pool_manager.h" />
     <ClInclude Include="raytracer\camera.h" />
     <ClInclude Include="global_allocation.h" />
     <ClInclude Include="header_footer.h" />
@@ -200,8 +204,9 @@
     <ClInclude Include="raytracer\vec3.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="raytracer\scenes\10frames.json" />
     <None Include="raytracer\scenes\single_sphere.json" />
-    <None Include="raytracer\scenes\test.json" />
+    <None Include="raytracer\scenes\100frames.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

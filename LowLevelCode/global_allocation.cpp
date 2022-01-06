@@ -4,13 +4,27 @@
 
 #include "header_footer.h"
 #include "heap_manager.h"
+#include "memory_pools/pool_manager.h"
 
 typedef char byte;
+
+#define USE_MEMORY_POOLS false
 
 void* allocateManaged(size_t size, ManagedHeap* heap)
 {
 	size_t fullSize = sizeof(Header) + size + sizeof(Footer);
-	byte* memoryAddressHeader = static_cast<byte*>(malloc(fullSize));
+	byte* memoryAddressHeader = nullptr;
+
+	bool poolAllocated = false;
+	if (USE_MEMORY_POOLS && !PoolManager::it().getDontUsePoolsOverride())
+	{
+		poolAllocated = true;
+		memoryAddressHeader = static_cast<byte*>(PoolManager::it().allocateMemory(fullSize)); 
+	}
+	else
+	{
+		memoryAddressHeader = static_cast<byte*>(malloc(fullSize));
+	}
 
 	Header* headerPtr = reinterpret_cast<Header*>(memoryAddressHeader);
 	if (headerPtr != nullptr)
@@ -21,6 +35,8 @@ void* allocateManaged(size_t size, ManagedHeap* heap)
 		headerPtr->m_size = size;
 
 		headerPtr->m_heapPtr = heap;
+
+		headerPtr->m_isPoolAllocated = poolAllocated;
 
 		headerPtr->m_next = nullptr;
 		headerPtr->m_prev = nullptr;
@@ -64,15 +80,23 @@ void deallocateManaged(void* memoryAddress)
 		MEM_ALLOC_COUT_ERROR("Things went bad with footer " << footerPtr << " for object " << memoryAddress)
 	}
 
+	size_t fullSize = sizeof(Header) + headerPtr->m_size + sizeof(Footer);
+
 	ManagedHeap* heapPtr = headerPtr->m_heapPtr;
 	if (heapPtr != nullptr)
 	{
-		size_t fullSize = sizeof(Header) + headerPtr->m_size + sizeof(Footer);
 		heapPtr->updateBytesDeallocated(fullSize);
 		heapPtr->removeHeader(headerPtr);
 	}
 
-	free(static_cast<void*>(headerPtr));
+	if (headerPtr->m_isPoolAllocated)
+	{
+		PoolManager::it().deallocateMemory(fullSize, headerPtr);
+	}
+	else
+	{
+		free(static_cast<void*>(headerPtr));
+	}
 }
 
 void* operator new(size_t size)
